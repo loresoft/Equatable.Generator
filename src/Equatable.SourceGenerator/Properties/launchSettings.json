@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Equatable.Entities": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\..\\test\\Equatable.Entities\\Equatable.Entities.csproj"
+    }
+
+  }
+}
