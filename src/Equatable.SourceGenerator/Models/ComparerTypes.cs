@@ -1,4 +1,4 @@
-﻿namespace Equatable.SourceGenerator.Models;
+namespace Equatable.SourceGenerator.Models;
 
 public enum ComparerTypes
 {

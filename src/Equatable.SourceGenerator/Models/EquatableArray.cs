@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Equatable.SourceGenerator.Models;
 
@@ -28,11 +27,12 @@ public readonly struct EquatableArray<T>(T[] array) : IEquatable<EquatableArray<
         if (Array is not T[] array)
             return 0;
 
-        HashCode hashCode = default;
-        foreach (T item in array)
-            hashCode.Add(item);
+        var hashCode = 16777619;
 
-        return hashCode.ToHashCode();
+        for (int i = 0; i < array.Length; i++)
+            hashCode = unchecked((hashCode * -1521134295) + EqualityComparer<T>.Default.GetHashCode(array[i]));
+
+        return hashCode;
     }
 
 

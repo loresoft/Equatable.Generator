@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Equatable.SourceGenerator;
@@ -259,6 +259,31 @@ public class IndentedStringBuilder
 
         if (c(text))
             AppendLine(text);
+
+        return this;
+    }
+
+    /// <summary>
+    /// Appends a copy of the specified string followed by the default line terminator if <paramref name="condition"/> is met.
+    /// </summary>
+    /// <param name="text">The string to append.</param>
+    /// <param name="condition">The condition delegate to evaluate. If condition is null, String.IsNullOrWhiteSpace method will be used.</param>
+    public IndentedStringBuilder AppendLineIf(string text, bool condition)
+    {
+        if (condition)
+            AppendLine(text);
+
+        return this;
+    }
+
+    /// <summary>
+    /// Appends a copy of the specified string followed by the default line terminator if <paramref name="condition"/> is met.
+    /// </summary>
+    /// <param name="condition">The condition delegate to evaluate. If condition is null, String.IsNullOrWhiteSpace method will be used.</param>
+    public IndentedStringBuilder AppendLineIf(bool condition)
+    {
+        if (condition)
+            AppendLine();
 
         return this;
     }

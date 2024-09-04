@@ -1,3 +1,5 @@
+using System.Xml.Linq;
+
 using Equatable.SourceGenerator.Models;
 
 using Microsoft.CodeAnalysis;
@@ -72,18 +74,46 @@ public class EquatableGenerator : IIncrementalGenerator
         var classNamespace = targetSymbol.ContainingNamespace.ToDisplayString();
         var className = targetSymbol.Name;
 
-        var propertySymbols = GetProperties(targetSymbol);
+        var baseHashCode = GetBaseHashCodeMethod(targetSymbol);
+        var baseEquals = GetBaseEqualsMethod(targetSymbol);
+        var baseEquatable = GetBaseEquatableType(targetSymbol);
+
+        var propertySymbols = GetProperties(targetSymbol, baseHashCode == null && baseEquatable == null);
 
         var propertyArray = propertySymbols
-            .Select(p => CreateProperty(p))
+            .Select(CreateProperty)
             .ToArray() ?? [];
 
-        var entity = new EquatableClass(classNamespace, className, propertyArray);
+        // the seed value of the hash code method
+        var seedHash = 0;
+
+        if (baseHashCode != null)
+            seedHash = (seedHash * HashFactor) + GetFNVHashCode(baseHashCode.ContainingSymbol.Name);
+        else if (baseEquatable != null)
+            seedHash = (seedHash * HashFactor) + GetFNVHashCode(baseEquatable.Name);
+        else if (baseEquals != null)
+            seedHash = (seedHash * HashFactor) + GetFNVHashCode(baseEquals.ContainingSymbol.Name);
+
+        foreach (var property in propertyArray)
+            seedHash = (seedHash * HashFactor) + GetFNVHashCode(property.PropertyName);
+
+        var entity = new EquatableClass(
+            EntityNamespace: classNamespace,
+            EntityName: className,
+            Properties: propertyArray,
+            IsRecord: targetSymbol.IsRecord,
+            IsValueType: targetSymbol.IsValueType,
+            IsSealed: targetSymbol.IsSealed,
+            IncludeBaseEqualsMethod: baseEquals != null || baseEquatable != null,
+            IncludeBaseHashMethod: baseHashCode != null || baseEquatable != null,
+            SeedHash: seedHash
+        );
+
         return new EquatableContext(entity, null);
     }
 
 
-    private static IEnumerable<IPropertySymbol> GetProperties(INamedTypeSymbol targetSymbol)
+    private static IEnumerable<IPropertySymbol> GetProperties(INamedTypeSymbol targetSymbol, bool includeBaseProperties = true)
     {
         var properties = new Dictionary<string, IPropertySymbol>();
 
@@ -102,6 +132,9 @@ public class EquatableGenerator : IIncrementalGenerator
             foreach (var propertySymbol in propertySymbols)
                 properties.Add(propertySymbol.Name, propertySymbol);
 
+            if (!includeBaseProperties)
+                break;
+
             currentSymbol = currentSymbol.BaseType;
         }
 
@@ -115,7 +148,7 @@ public class EquatableGenerator : IIncrementalGenerator
 
         // look for custom equality
         var attributes = propertySymbol.GetAttributes();
-        if (attributes == null || attributes.Length == 0)
+        if (attributes.Length == 0)
         {
             return new EquatableProperty(
                 propertyName,
@@ -148,11 +181,10 @@ public class EquatableGenerator : IIncrementalGenerator
 
     private static (ComparerTypes? comparerType, string? comparerName, string? comparerInstance) GetComparer(AttributeData? attribute)
     {
-        // known attributes
-        if (attribute == null || attribute.AttributeClass is not { ContainingNamespace: { Name: "Attributes", ContainingNamespace.Name: "Equatable" } })
+        if (!IsKnownAttribute(attribute))
             return (null, null, null);
 
-        var className = attribute.AttributeClass?.Name;
+        var className = attribute?.AttributeClass?.Name;
 
         return className switch
         {
@@ -233,5 +265,144 @@ public class EquatableGenerator : IIncrementalGenerator
         }
 
         return !propertySymbol.IsIndexer && propertySymbol.DeclaredAccessibility == Accessibility.Public;
+    }
+
+    private static bool IsKnownAttribute(AttributeData? attribute)
+    {
+        if (attribute == null)
+            return false;
+
+        return attribute.AttributeClass is
+        {
+            ContainingNamespace:
+            {
+                Name: "Attributes",
+                ContainingNamespace.Name: "Equatable"
+            }
+        };
+
+    }
+
+    private static bool IsValueType(INamedTypeSymbol targetSymbol)
+    {
+        return targetSymbol is
+        {
+            Name: nameof(ValueType) or nameof(Object),
+            ContainingNamespace.Name: "System"
+        };
+    }
+
+
+    private static IMethodSymbol? GetBaseHashCodeMethod(INamedTypeSymbol targetSymbol)
+    {
+        // don't use for value types
+        if (targetSymbol.BaseType == null)
+            return null;
+
+        var currentSymbol = targetSymbol.BaseType;
+
+        // check all base types for GetHashCode method override
+        while (currentSymbol != null)
+        {
+            // stop at ValueType
+            if (IsValueType(currentSymbol))
+                return null;
+
+            var methodSymbol = currentSymbol
+                .GetMembers(nameof(GetHashCode))
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(method => method.IsOverride
+                    && method.DeclaredAccessibility == Accessibility.Public
+                    && !method.IsStatic
+                    && method.Parameters.Length == 0
+                    && method.ReturnType.SpecialType == SpecialType.System_Int32
+                    && !method.IsAbstract
+                );
+
+            if (methodSymbol != null)
+                return methodSymbol;
+
+            currentSymbol = currentSymbol.BaseType;
+        }
+
+        return null;
+    }
+
+    private static IMethodSymbol? GetBaseEqualsMethod(INamedTypeSymbol targetSymbol)
+    {
+        // don't use for value types
+        if (targetSymbol.BaseType == null)
+            return null;
+
+        var currentSymbol = targetSymbol.BaseType;
+
+        // check all base types for Equals method override
+        while (currentSymbol != null)
+        {
+            // stop at ValueType
+            if (IsValueType(currentSymbol))
+                return null;
+
+            var methodSymbol = currentSymbol
+                .GetMembers(nameof(Equals))
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(method => method.IsOverride
+                    && method.DeclaredAccessibility == Accessibility.Public
+                    && !method.IsStatic
+                    && method.Parameters.Length == 1
+                    && method.ReturnType.SpecialType == SpecialType.System_Boolean
+                    && method.Parameters[0].Type.SpecialType == SpecialType.System_Object
+                    && !method.IsAbstract
+                );
+
+            if (methodSymbol != null)
+                return methodSymbol;
+
+            currentSymbol = currentSymbol.BaseType;
+        }
+
+        return null;
+    }
+
+    private static INamedTypeSymbol? GetBaseEquatableType(INamedTypeSymbol targetSymbol)
+    {
+        if (targetSymbol.BaseType == null)
+            return null;
+
+        var currentSymbol = targetSymbol.BaseType;
+
+        // check all base types for Equals method override
+        while (currentSymbol != null)
+        {
+            // stop at ValueType
+            if (IsValueType(currentSymbol))
+                return null;
+
+            var attributes = currentSymbol.GetAttributes();
+            if (attributes.Length > 0 && attributes.Any(a => IsKnownAttribute(a) && a.AttributeClass?.Name == "EquatableAttribute"))
+            {
+                return currentSymbol;
+            }
+
+            currentSymbol = currentSymbol.BaseType;
+        }
+
+        return null;
+
+    }
+
+
+    private const int HashFactor = -1521134295;
+
+    private const int FnvOffsetBias = unchecked((int)2166136261);
+    private const int FnvPrime = 16777619;
+
+    private static int GetFNVHashCode(string text)
+    {
+        var hashCode = FnvOffsetBias;
+        for (int i = 0; i < text.Length; i++)
+            hashCode = unchecked((hashCode ^ text[i]) * FnvPrime);
+
+        return hashCode;
     }
 }

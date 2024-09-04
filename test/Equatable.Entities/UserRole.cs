@@ -1,7 +1,6 @@
 using System;
 
 using Equatable.Attributes;
-using Equatable.Generator.Entities;
 
 namespace Equatable.Entities;
 

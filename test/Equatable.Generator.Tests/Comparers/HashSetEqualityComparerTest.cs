@@ -2,7 +2,7 @@ using Equatable.Comparers;
 
 namespace Equatable.Generator.Tests.Comparers;
 
-public class HashSetEqualityComparerTests
+public class HashSetEqualityComparerTest
 {
     [Fact]
     public void DefaultEquals()

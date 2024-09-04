@@ -5,7 +5,7 @@ using Equatable.Attributes;
 namespace Equatable.Entities;
 
 [Equatable]
-public sealed partial record StatusRecord(
+public partial record struct StatusRecordStruct(
     int Id,
     string Name,
     string? Description,

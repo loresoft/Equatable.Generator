@@ -2,9 +2,8 @@ using System;
 using System.Collections.Generic;
 
 using Equatable.Attributes;
-using Equatable.Entities;
 
-namespace Equatable.Generator.Entities;
+namespace Equatable.Entities;
 
 [Equatable]
 public partial class User : ModelBase

@@ -2,7 +2,7 @@ using Equatable.Comparers;
 
 namespace Equatable.Generator.Tests.Comparers;
 
-public class SequenceEqualityComparerTests
+public class SequenceEqualityComparerTest
 {
     [Fact]
     public void DefaultEquals()

@@ -1,7 +1,6 @@
 using System;
 
 using Equatable.Attributes;
-using Equatable.Generator.Entities;
 
 namespace Equatable.Entities;
 
@@ -15,5 +14,6 @@ public partial class UserLogin : ModelBase
     public bool IsSuccessful { get; set; }
     public string? FailureMessage { get; set; }
 
+    [IgnoreEquality]
     public User? User { get; set; }
 }

@@ -5,16 +5,12 @@ using Equatable.Attributes;
 
 namespace Equatable.Entities;
 
+[Equatable]
 public partial record StatusRecordList(
     int Id,
     string Name,
     string? Description,
     int DisplayOrder,
     bool IsActive,
-    DateTimeOffset Created,
-    string? CreatedBy,
-    DateTimeOffset Updated,
-    string? UpdatedBy,
-    long RowVersion,
     List<string> Versions
 );

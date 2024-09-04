@@ -396,3 +396,13 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Custom
+/artifacts
+/Tools
+*.GhostDoc.xml
+coverage.xml
+coverage.opencover.xml
+*.received.txt
+.idea
+_site

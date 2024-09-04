@@ -24,11 +24,23 @@ public static class EquatableWriter
             .IncrementIndent();
 
         codeBuilder
-            .Append("partial class ")
-            .Append(entityClass.EntityName)
-            .Append(" : global::System.IEquatable<")
-            .Append(entityClass.EntityName)
-            .AppendLine("?>")
+            .Append("partial ")
+            .AppendIf("record ", entityClass.IsRecord)
+            .AppendIf("class ", !entityClass.IsValueType)
+            .AppendIf("struct ", entityClass.IsValueType)
+            .Append(entityClass.EntityName);
+
+        if (!entityClass.IsRecord)
+        {
+            codeBuilder
+                .Append(" : global::System.IEquatable<")
+                .Append(entityClass.EntityName)
+                .AppendIf("?", !entityClass.IsValueType)
+                .Append(">");
+        }
+
+        codeBuilder
+            .AppendLine()
             .AppendLine("{")
             .IncrementIndent();
 
@@ -49,67 +61,93 @@ public static class EquatableWriter
     {
         codeBuilder
             .AppendLine("/// <inheritdoc />")
-            .Append("public bool Equals(")
+            .Append("[global::System.CodeDom.Compiler.GeneratedCodeAttribute(\"")
+            .Append(ThisAssembly.Product)
+            .Append("\", \"")
+            .Append(ThisAssembly.InformationalVersion)
+            .AppendLine("\")]")
+            .Append("public ")
+            .AppendIf("virtual ", entityClass.IsRecord && !entityClass.IsSealed)
+            .Append("bool Equals(")
             .Append(entityClass.EntityName)
-            .AppendLine("? other)")
+            .AppendIf("?", !entityClass.IsValueType)
+            .AppendLine(" other)")
             .AppendLine("{")
             .IncrementIndent();
 
-        codeBuilder
-            .Append("return other is not null");
+        bool wrote;
+        if (entityClass.IsValueType)
+        {
+            codeBuilder.Append("return");
+            wrote = false;
+        }
+        else
+        {
+            codeBuilder.Append("return other is not null");
+            wrote = true;
+        }
+
+        if (entityClass.IncludeBaseEqualsMethod)
+        {
+            codeBuilder
+                .AppendLineIf(wrote)
+                .AppendIf("    &&", wrote)
+                .Append(" base.Equals(other)");
+
+            wrote = true;
+        }
 
         foreach (var entityProperty in entityClass.Properties)
         {
+            codeBuilder
+                .AppendLineIf(wrote)
+                .AppendIf("    &&", wrote);
+
             switch (entityProperty.ComparerType)
             {
                 case ComparerTypes.Dictionary:
                     codeBuilder
-                        .AppendLine()
-                        .Append("    && ")
-                        .Append("DictionaryEquals(")
+                        .Append(" DictionaryEquals(")
                         .Append(entityProperty.PropertyName)
                         .Append(", other.")
                         .Append(entityProperty.PropertyName)
                         .Append(")");
+
                     break;
                 case ComparerTypes.HashSet:
                     codeBuilder
-                        .AppendLine()
-                        .Append("    && ")
-                        .Append("HashSetEquals(")
+                        .Append(" HashSetEquals(")
                         .Append(entityProperty.PropertyName)
                         .Append(", other.")
                         .Append(entityProperty.PropertyName)
                         .Append(")");
+
                     break;
                 case ComparerTypes.Reference:
                     break;
                 case ComparerTypes.Sequence:
                     codeBuilder
-                        .AppendLine()
-                        .Append("    && ")
-                        .Append("SequenceEquals(")
+                        .Append(" SequenceEquals(")
                         .Append(entityProperty.PropertyName)
                         .Append(", other.")
                         .Append(entityProperty.PropertyName)
                         .Append(")");
+
                     break;
                 case ComparerTypes.String:
                     codeBuilder
-                        .AppendLine()
-                        .Append("    && ")
-                        .Append("global::System.StringComparer.")
+                        .Append(" global::System.StringComparer.")
                         .Append(entityProperty.ComparerName)
                         .Append(".Equals(")
                         .Append(entityProperty.PropertyName)
                         .Append(", other.")
                         .Append(entityProperty.PropertyName)
                         .Append(")");
+
                     break;
                 case ComparerTypes.Custom:
                     codeBuilder
-                        .AppendLine()
-                        .Append("    && ")
+                        .Append(" ")
                         .Append(entityProperty.ComparerName)
                         .Append(".")
                         .Append(entityProperty.ComparerInstance ?? "Default")
@@ -118,20 +156,22 @@ public static class EquatableWriter
                         .Append(", other.")
                         .Append(entityProperty.PropertyName)
                         .Append(")");
+
                     break;
                 default:
                     codeBuilder
-                        .AppendLine()
-                        .Append("    && ")
-                        .Append("global::System.Collections.Generic.EqualityComparer<")
+                        .Append(" global::System.Collections.Generic.EqualityComparer<")
                         .Append(entityProperty.PropertyType)
                         .Append(">.Default.Equals(")
                         .Append(entityProperty.PropertyName)
                         .Append(", other.")
                         .Append(entityProperty.PropertyName)
                         .Append(")");
+
                     break;
             }
+
+            wrote = true;
         }
 
         codeBuilder
@@ -200,13 +240,13 @@ public static class EquatableWriter
                 .AppendLine("if (left == null || right == null)")
                 .AppendLine("    return false;")
                 .AppendLine()
-                .AppendLine("if (left is ISet<TValue> leftSet)")
+                .AppendLine("if (left is global::System.Collections.Generic.ISet<T> leftSet)")
                 .AppendLine("    return leftSet.SetEquals(right);")
                 .AppendLine()
-                .AppendLine("if (right is ISet<TValue> rightSet)")
+                .AppendLine("if (right is global::System.Collections.Generic.ISet<T> rightSet)")
                 .AppendLine("    return rightSet.SetEquals(left);")
                 .AppendLine()
-                .AppendLine("var hashSet = new HashSet<TValue>(left, global::System.Collections.Generic.EqualityComparer<T>.Default);")
+                .AppendLine("var hashSet = new global::System.Collections.Generic.HashSet<T>(left, global::System.Collections.Generic.EqualityComparer<T>.Default);")
                 .AppendLine("return hashSet.SetEquals(right);")
                 .DecrementIndent()
                 .AppendLine("}")
@@ -234,42 +274,82 @@ public static class EquatableWriter
 
     private static void GenerateEquals(IndentedStringBuilder codeBuilder, EquatableClass entityClass)
     {
+        // can't override equal for record types
+        if (entityClass.IsRecord)
+            return;
+
         codeBuilder
             .AppendLine("/// <inheritdoc />")
+            .Append("[global::System.CodeDom.Compiler.GeneratedCodeAttribute(\"")
+            .Append(ThisAssembly.Product)
+            .Append("\", \"")
+            .Append(ThisAssembly.InformationalVersion)
+            .AppendLine("\")]")
             .AppendLine("public override bool Equals(object? obj)")
             .AppendLine("{")
-            .IncrementIndent()
-            .Append("return Equals(obj as ")
-            .Append(entityClass.EntityName)
-            .AppendLine(");")
+            .IncrementIndent();
+
+        if (entityClass.IsValueType)
+        {
+            codeBuilder
+                .Append("return obj is ")
+                .Append(entityClass.EntityName)
+                .AppendLine(" instance && Equals(instance);");
+        }
+        else
+        {
+            codeBuilder
+                .Append("return Equals(obj as ")
+                .Append(entityClass.EntityName)
+                .AppendLine(");");
+        }
+
+        codeBuilder
             .DecrementIndent()
             .AppendLine("}")
             .AppendLine();
 
         codeBuilder
             .AppendLine("/// <inheritdoc />")
+            .Append("[global::System.CodeDom.Compiler.GeneratedCodeAttribute(\"")
+            .Append(ThisAssembly.Product)
+            .Append("\", \"")
+            .Append(ThisAssembly.InformationalVersion)
+            .AppendLine("\")]")
             .Append("public static bool operator ==(")
             .Append(entityClass.EntityName)
-            .Append("? left, ")
+            .AppendIf("?", !entityClass.IsValueType)
+            .Append(" left, ")
             .Append(entityClass.EntityName)
-            .AppendLine("? right)")
+            .AppendIf("?", !entityClass.IsValueType)
+            .AppendLine(" right)")
             .AppendLine("{")
             .IncrementIndent()
-            .Append("return Equals(left, right);")
+            .Append("return global::System.Collections.Generic.EqualityComparer<")
+            .Append(entityClass.EntityName)
+            .AppendIf("?", !entityClass.IsValueType)
+            .AppendLine(">.Default.Equals(left, right);")
             .DecrementIndent()
             .AppendLine("}")
             .AppendLine();
 
         codeBuilder
             .AppendLine("/// <inheritdoc />")
+            .Append("[global::System.CodeDom.Compiler.GeneratedCodeAttribute(\"")
+            .Append(ThisAssembly.Product)
+            .Append("\", \"")
+            .Append(ThisAssembly.InformationalVersion)
+            .AppendLine("\")]")
             .Append("public static bool operator !=(")
             .Append(entityClass.EntityName)
-            .Append("? left, ")
+            .AppendIf("?", !entityClass.IsValueType)
+            .Append(" left, ")
             .Append(entityClass.EntityName)
-            .AppendLine("? right)")
+            .AppendIf("?", !entityClass.IsValueType)
+            .AppendLine(" right)")
             .AppendLine("{")
             .IncrementIndent()
-            .Append("return !Equals(left, right);")
+            .AppendLine("return !(left == right);")
             .DecrementIndent()
             .AppendLine("}")
             .AppendLine();
@@ -279,12 +359,22 @@ public static class EquatableWriter
     {
         codeBuilder
             .AppendLine("/// <inheritdoc />")
+            .Append("[global::System.CodeDom.Compiler.GeneratedCodeAttribute(\"")
+            .Append(ThisAssembly.Product)
+            .Append("\", \"")
+            .Append(ThisAssembly.InformationalVersion)
+            .AppendLine("\")]")
             .Append("public override int GetHashCode()")
             .AppendLine("{")
             .IncrementIndent();
 
         codeBuilder
-            .AppendLine("int hashCode = -510739267;");
+            .Append("int hashCode = ")
+            .Append(entityClass.SeedHash)
+            .AppendLine(";");
+
+        if (entityClass.IncludeBaseHashMethod)
+            codeBuilder.AppendLine("hashCode = (hashCode * -1521134295) + base.GetHashCode();");
 
         foreach (var entityProperty in entityClass.Properties)
         {
@@ -372,10 +462,12 @@ public static class EquatableWriter
                 .AppendLine();
 
             codeBuilder
-                .AppendLine("int hashCode = -510739267;")
+                .Append("int hashCode = ")
+                .Append(entityClass.SeedHash)
+                .AppendLine(";")
                 .AppendLine()
                 .AppendLine("// sort by key to ensure dictionary with different order are the same")
-                .AppendLine("foreach (var item in items.OrderBy(d => d.Key))")
+                .AppendLine("foreach (var item in global::System.Linq.Enumerable.OrderBy(items, d => d.Key))")
                 .AppendLine("{")
                 .IncrementIndent()
                 .AppendLine("hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<TKey>.Default.GetHashCode(item.Key!);")
@@ -400,10 +492,12 @@ public static class EquatableWriter
                 .AppendLine("if (items == null)")
                 .AppendLine("    return 0;")
                 .AppendLine()
-                .AppendLine("int hashCode = -114976970;")
+                .Append("int hashCode = ")
+                .Append(entityClass.SeedHash)
+                .AppendLine(";")
                 .AppendLine()
                 .AppendLine("// sort to ensure set with different order are the same")
-                .AppendLine("foreach (var item in items.OrderBy(s => s))")
+                .AppendLine("foreach (var item in global::System.Linq.Enumerable.OrderBy(items, d => d))")
                 .AppendLine("    hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<T>.Default.GetHashCode(item!);")
                 .AppendLine()
                 .AppendLine("return hashCode;")
@@ -421,7 +515,9 @@ public static class EquatableWriter
                 .AppendLine("if (items == null)")
                 .AppendLine("    return 0;")
                 .AppendLine()
-                .AppendLine("int hashCode = -114976970;")
+                .Append("int hashCode = ")
+                .Append(entityClass.SeedHash)
+                .AppendLine(";")
                 .AppendLine()
                 .AppendLine("foreach (var item in items)")
                 .AppendLine("    hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<T>.Default.GetHashCode(item!);")

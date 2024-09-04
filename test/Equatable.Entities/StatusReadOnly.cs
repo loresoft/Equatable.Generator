@@ -5,18 +5,20 @@ using Equatable.Attributes;
 namespace Equatable.Entities;
 
 [Equatable]
-public partial class StatusReadOnly
+public readonly partial struct StatusReadOnly
 {
-    public int Id { get; init; }
+    public StatusReadOnly(int id, string name, string? description, int displayOrder, bool isActive)
+    {
+        Id = id;
+        Name = name;
+        Description = description;
+        DisplayOrder = displayOrder;
+        IsActive = isActive;
+    }
 
-    public string Name { get; init; } = null!;
-    public string? Description { get; init; }
-    public int DisplayOrder { get; init; }
-    public bool IsActive { get; init; }
-
-    public DateTimeOffset Created { get; init; }
-    public string? CreatedBy { get; init; }
-    public DateTimeOffset Updated { get; init; }
-    public string? UpdatedBy { get; init; }
-    public long RowVersion { get; init; }
+    public int Id { get; }
+    public string Name { get; } = null!;
+    public string? Description { get; }
+    public int DisplayOrder { get; }
+    public bool IsActive { get; }
 }

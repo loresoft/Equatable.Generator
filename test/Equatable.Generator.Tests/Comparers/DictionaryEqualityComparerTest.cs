@@ -2,7 +2,7 @@ using Equatable.Comparers;
 
 namespace Equatable.Generator.Tests.Comparers;
 
-public class DictionaryEqualityComparerTests
+public class DictionaryEqualityComparerTest
 {
     [Fact]
     public void DefaultEquals()
