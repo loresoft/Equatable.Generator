@@ -1,6 +1,6 @@
 # Equatable.Generator
 
-Source generator for Equals and GetHashCode
+Source generator for`Equals` and `GetHashCode`
 
 [![Build Project](https://github.com/loresoft/Equatable.Generator/actions/workflows/dotnet.yml/badge.svg)](https://github.com/loresoft/Equatable.Generator/actions/workflows/dotnet.yml)
 
