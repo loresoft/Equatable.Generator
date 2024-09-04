@@ -33,6 +33,7 @@ Prevent including Equatable.Generator as a dependence
 ### Requirements
 
 This library requires:
+
 - Target framework .NET Standard 2.0 or greater
 - Project C# `LangVersion` 9.0 or higher
 

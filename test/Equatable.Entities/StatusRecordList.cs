@@ -12,5 +12,5 @@ public partial record StatusRecordList(
     string? Description,
     int DisplayOrder,
     bool IsActive,
-    List<string> Versions
+    [property: SequenceEquality] List<string> Versions
 );

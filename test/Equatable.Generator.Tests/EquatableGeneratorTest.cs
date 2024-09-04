@@ -191,7 +191,109 @@ public partial class Priority : ModelBase
             .ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
+    [Fact]
+    public Task GenerateRecordSealed()
+    {
+        var source = @"
+using System;
+using Equatable.Attributes;
 
+namespace Equatable.Entities;
+
+[Equatable]
+public sealed partial record StatusRecord(
+    int Id,
+    string Name,
+    string? Description,
+    int DisplayOrder,
+    bool IsActive,
+    DateTimeOffset Created,
+    string? CreatedBy,
+    DateTimeOffset Updated,
+    string? UpdatedBy,
+    long RowVersion
+);
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        diagnostics.Should().BeEmpty();
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateRecordSequence()
+    {
+        var source = @"
+using System;
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial record StatusRecordList(
+    int Id,
+    string Name,
+    string? Description,
+    int DisplayOrder,
+    bool IsActive,
+    [property: SequenceEquality] List<string> Versions
+);
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        diagnostics.Should().BeEmpty();
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateStructReadOnly()
+    {
+        var source = @"
+using System;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public readonly partial struct StatusReadOnly
+{
+    public StatusReadOnly(int id, string name, string? description, int displayOrder, bool isActive)
+    {
+        Id = id;
+        Name = name;
+        Description = description;
+        DisplayOrder = displayOrder;
+        IsActive = isActive;
+    }
+
+    public int Id { get; }
+    public string Name { get; } = null!;
+    public string? Description { get; }
+    public int DisplayOrder { get; }
+    public bool IsActive { get; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        diagnostics.Should().BeEmpty();
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
 
     private static (ImmutableArray<Diagnostic> Diagnostics, string Output) GetGeneratedOutput<T>(string source)
         where T : IIncrementalGenerator, new()
