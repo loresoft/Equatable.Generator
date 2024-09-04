@@ -8,8 +8,6 @@ Source generator for Equals and GetHashCode
 
 [![Equatable.Generator](https://img.shields.io/nuget/v/Equatable.Generator.svg)](https://www.nuget.org/packages/Equatable.Generator/)
 
-[![Source generator](https://raw.githubusercontent.com/loresoft/Equatable.Generator/main/media/Equatable.Generator.Genertors.png)](https://github.com/loresoft/Equatable.Generator)
-
 ## Features
 
 - Override `Equals` and `GetHashCode`
