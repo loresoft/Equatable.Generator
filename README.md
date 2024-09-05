@@ -15,6 +15,7 @@ Source generator for `Equals` and `GetHashCode`
 - Support `class`, `record` and `struct` types
 - Support `EqualityComparer` per property
 - Comparers supported: String, Sequence, Dictionary, HashSet, Reference, and Custom
+- No dependencies
 
 ### Usage
 
