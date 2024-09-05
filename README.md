@@ -41,7 +41,7 @@ This library requires:
 
 Place equatable attribute on a `class`, `record` or `struct`.  The source generate will create a partial with overrides for `Equals` and `GetHashCode`.
 
-- `[Equatable]` Marks the class to generate overrides for `Equals` and `GetHashCod`
+- `[Equatable]` Marks the class to generate overrides for `Equals` and `GetHashCode`
 
  The default comparer used in the implementation of `Equals` and `GetHashCode` is `EqualityComparer<T>.Default`.  Customize the comparer used with the following attributes.
 
@@ -52,3 +52,38 @@ Place equatable attribute on a `class`, `record` or `struct`.  The source genera
 - `[HashSetEquality]` Use `ISet<T>.SetEquals` to determine whether enumerables are equal
 - `[ReferenceEquality]` Use `Object.ReferenceEquals` to determines whether instances are the same instance
 - `[EqualityComparer]` Use the specified `EqualityComparer`
+
+### Example Usage
+
+Example of using the attributes to customize the source generation of `Equals` and `GetHashCode`
+
+``` c#
+[Equatable]
+public partial class UserImport
+{
+    [StringEquality(StringComparison.OrdinalIgnoreCase)]
+    public string EmailAddress { get; set; } = null!;
+
+    public string? DisplayName { get; set; }
+
+    public string? FirstName { get; set; }
+
+    public string? LastName { get; set; }
+
+    public DateTimeOffset? LockoutEnd { get; set; }
+
+    public DateTimeOffset? LastLogin { get; set; }
+
+    [IgnoreEquality]
+    public string FullName => $"{FirstName} {LastName}";
+
+    [HashSetEquality]
+    public HashSet<string>? Roles { get; set; }
+
+    [DictionaryEquality]
+    public Dictionary<string, int>? Permissions { get; set; }
+
+    [SequenceEquality]
+    public List<DateTimeOffset>? History { get; set; }
+}
+```
