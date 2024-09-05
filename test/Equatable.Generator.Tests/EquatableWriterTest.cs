@@ -9,8 +9,10 @@ public class EquatableWriterTest
     public async Task GenerateBasicUser()
     {
         var entityClass = new EquatableClass(
+            FullyQualified: "global::Equatable.Entities.User",
             EntityNamespace: "Equatable.Entities",
             EntityName: "User",
+            ContainingTypes: Array.Empty<ContainingClass>(),
             Properties: new EquatableArray<EquatableProperty>([
                 new EquatableProperty("Id", "int"),
                 new EquatableProperty("FirstName", "string?"),
@@ -38,8 +40,10 @@ public class EquatableWriterTest
     public async Task GenerateUserStringSequence()
     {
         var entityClass = new EquatableClass(
+            FullyQualified: "global::Equatable.Entities.User",
             EntityNamespace: "Equatable.Entities",
             EntityName: "User",
+            ContainingTypes: Array.Empty<ContainingClass>(),
             Properties: new EquatableArray<EquatableProperty>([
                 new EquatableProperty("Id", "int"),
                 new EquatableProperty("FirstName", "string?"),
@@ -68,8 +72,10 @@ public class EquatableWriterTest
     public async Task GenerateUserImportHashSetDictionary()
     {
         var entityClass = new EquatableClass(
+            FullyQualified: "global::Equatable.Entities.UserImport",
             EntityNamespace: "Equatable.Entities",
             EntityName: "UserImport",
+            ContainingTypes: Array.Empty<ContainingClass>(),
             Properties: new EquatableArray<EquatableProperty>([
                 new EquatableProperty("EmailAddress", "string", ComparerTypes.String, "OrdinalIgnoreCase"),
                 new EquatableProperty("DisplayName", "string?"),

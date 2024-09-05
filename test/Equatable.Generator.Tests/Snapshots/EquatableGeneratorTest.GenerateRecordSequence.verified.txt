@@ -6,14 +6,14 @@ namespace Equatable.Entities
     partial record class StatusRecordList
     {
         /// <inheritdoc />
-        public virtual bool Equals(StatusRecordList? other)
+        public virtual bool Equals(global::Equatable.Entities.StatusRecordList? other)
         {
-            return other is not null
-                && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(Id, other.Id)
-                && global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(Name, other.Name)
-                && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(Description, other.Description)
-                && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(DisplayOrder, other.DisplayOrder)
-                && global::System.Collections.Generic.EqualityComparer<bool>.Default.Equals(IsActive, other.IsActive)
+            return !(other is null)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(Id, other.Id)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.Equals(Name, other.Name)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Description, other.Description)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(DisplayOrder, other.DisplayOrder)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Boolean>.Default.Equals(IsActive, other.IsActive)
                 && SequenceEquals(Versions, other.Versions);
 
             static bool SequenceEquals<T>(global::System.Collections.Generic.IEnumerable<T>? left, global::System.Collections.Generic.IEnumerable<T>? right)
@@ -21,7 +21,7 @@ namespace Equatable.Entities
                 if (global::System.Object.ReferenceEquals(left, right))
                     return true;
 
-                if (left == null || right == null)
+                if (left is null || right is null)
                     return false;
 
                 return global::System.Linq.Enumerable.SequenceEqual(left, right, global::System.Collections.Generic.EqualityComparer<T>.Default);
@@ -32,17 +32,17 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override int GetHashCode(){
             int hashCode = 1051616673;
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(Id!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string>.Default.GetHashCode(Name!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(Description!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(DisplayOrder!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<bool>.Default.GetHashCode(IsActive!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(Id!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.GetHashCode(Name!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Description!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(DisplayOrder!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Boolean>.Default.GetHashCode(IsActive!);
             hashCode = (hashCode * -1521134295) + SequenceHashCode(Versions);
             return hashCode;
 
             static int SequenceHashCode<T>(global::System.Collections.Generic.IEnumerable<T>? items)
             {
-                if (items == null)
+                if (items is null)
                     return 0;
 
                 int hashCode = 1051616673;

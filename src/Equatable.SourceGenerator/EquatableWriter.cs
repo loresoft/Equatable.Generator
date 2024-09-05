@@ -8,7 +8,7 @@ public static class EquatableWriter
 {
     public static string Generate(EquatableClass entityClass)
     {
-        if (entityClass == null)
+        if (entityClass is null)
             throw new ArgumentNullException(nameof(entityClass));
 
         var codeBuilder = new IndentedStringBuilder();
@@ -23,6 +23,19 @@ public static class EquatableWriter
             .AppendLine("{")
             .IncrementIndent();
 
+        // support nested types
+        foreach (var containingClass in entityClass.ContainingTypes)
+        {
+            codeBuilder
+                .Append("partial ")
+                .AppendIf("record ", containingClass.IsRecord)
+                .AppendIf("class ", !containingClass.IsValueType)
+                .AppendIf("struct ", containingClass.IsValueType)
+                .AppendLine(containingClass.EntityName)
+                .AppendLine("{")
+                .IncrementIndent();
+        }
+
         codeBuilder
             .Append("partial ")
             .AppendIf("record ", entityClass.IsRecord)
@@ -34,7 +47,7 @@ public static class EquatableWriter
         {
             codeBuilder
                 .Append(" : global::System.IEquatable<")
-                .Append(entityClass.EntityName)
+                .Append(entityClass.FullyQualified)
                 .AppendIf("?", !entityClass.IsValueType)
                 .Append(">");
         }
@@ -50,7 +63,17 @@ public static class EquatableWriter
 
         codeBuilder
             .DecrementIndent()
-            .AppendLine("}") // class
+            .AppendLine("}"); // class
+
+        // support nested types
+        foreach (var containingClass in entityClass.ContainingTypes)
+        {
+            codeBuilder
+                .DecrementIndent()
+                .AppendLine("}");
+        }
+
+        codeBuilder
             .DecrementIndent()
             .AppendLine("}"); // namespace
 
@@ -69,7 +92,7 @@ public static class EquatableWriter
             .Append("public ")
             .AppendIf("virtual ", entityClass.IsRecord && !entityClass.IsSealed)
             .Append("bool Equals(")
-            .Append(entityClass.EntityName)
+            .Append(entityClass.FullyQualified)
             .AppendIf("?", !entityClass.IsValueType)
             .AppendLine(" other)")
             .AppendLine("{")
@@ -83,7 +106,7 @@ public static class EquatableWriter
         }
         else
         {
-            codeBuilder.Append("return other is not null");
+            codeBuilder.Append("return !(other is null)");
             wrote = true;
         }
 
@@ -195,7 +218,7 @@ public static class EquatableWriter
 
     private static void GenerateEquatableFunctions(IndentedStringBuilder codeBuilder, EquatableClass entityClass)
     {
-        if (entityClass == null)
+        if (entityClass is null)
             return;
 
         if (entityClass.Properties.Any(p => p.ComparerType == ComparerTypes.Dictionary))
@@ -207,7 +230,7 @@ public static class EquatableWriter
                 .AppendLine("if (global::System.Object.ReferenceEquals(left, right))")
                 .AppendLine("    return true;")
                 .AppendLine()
-                .AppendLine("if (left == null || right == null)")
+                .AppendLine("if (left is null || right is null)")
                 .AppendLine("    return false;")
                 .AppendLine()
                 .AppendLine("if (left.Count != right.Count)")
@@ -244,7 +267,7 @@ public static class EquatableWriter
                 .AppendLine("if (global::System.Object.ReferenceEquals(left, right))")
                 .AppendLine("    return true;")
                 .AppendLine()
-                .AppendLine("if (left == null || right == null)")
+                .AppendLine("if (left is null || right is null)")
                 .AppendLine("    return false;")
                 .AppendLine()
                 .AppendLine("if (left is global::System.Collections.Generic.ISet<T> leftSet)")
@@ -269,7 +292,7 @@ public static class EquatableWriter
                 .AppendLine("if (global::System.Object.ReferenceEquals(left, right))")
                 .AppendLine("    return true;")
                 .AppendLine()
-                .AppendLine("if (left == null || right == null)")
+                .AppendLine("if (left is null || right is null)")
                 .AppendLine("    return false;")
                 .AppendLine()
                 .AppendLine("return global::System.Linq.Enumerable.SequenceEqual(left, right, global::System.Collections.Generic.EqualityComparer<T>.Default);")
@@ -300,14 +323,14 @@ public static class EquatableWriter
         {
             codeBuilder
                 .Append("return obj is ")
-                .Append(entityClass.EntityName)
+                .Append(entityClass.FullyQualified)
                 .AppendLine(" instance && Equals(instance);");
         }
         else
         {
             codeBuilder
                 .Append("return Equals(obj as ")
-                .Append(entityClass.EntityName)
+                .Append(entityClass.FullyQualified)
                 .AppendLine(");");
         }
 
@@ -324,16 +347,16 @@ public static class EquatableWriter
             .Append(ThisAssembly.InformationalVersion)
             .AppendLine("\")]")
             .Append("public static bool operator ==(")
-            .Append(entityClass.EntityName)
+            .Append(entityClass.FullyQualified)
             .AppendIf("?", !entityClass.IsValueType)
             .Append(" left, ")
-            .Append(entityClass.EntityName)
+            .Append(entityClass.FullyQualified)
             .AppendIf("?", !entityClass.IsValueType)
             .AppendLine(" right)")
             .AppendLine("{")
             .IncrementIndent()
             .Append("return global::System.Collections.Generic.EqualityComparer<")
-            .Append(entityClass.EntityName)
+            .Append(entityClass.FullyQualified)
             .AppendIf("?", !entityClass.IsValueType)
             .AppendLine(">.Default.Equals(left, right);")
             .DecrementIndent()
@@ -348,10 +371,10 @@ public static class EquatableWriter
             .Append(ThisAssembly.InformationalVersion)
             .AppendLine("\")]")
             .Append("public static bool operator !=(")
-            .Append(entityClass.EntityName)
+            .Append(entityClass.FullyQualified)
             .AppendIf("?", !entityClass.IsValueType)
             .Append(" left, ")
-            .Append(entityClass.EntityName)
+            .Append(entityClass.FullyQualified)
             .AppendIf("?", !entityClass.IsValueType)
             .AppendLine(" right)")
             .AppendLine("{")
@@ -460,7 +483,7 @@ public static class EquatableWriter
 
     private static void GenerateHashCodeFunctions(IndentedStringBuilder codeBuilder, EquatableClass entityClass)
     {
-        if (entityClass == null)
+        if (entityClass is null)
             return;
 
         if (entityClass.Properties.Any(p => p.ComparerType == ComparerTypes.Dictionary))
@@ -469,7 +492,7 @@ public static class EquatableWriter
                 .AppendLine("static int DictionaryHashCode<TKey, TValue>(global::System.Collections.Generic.IDictionary<TKey, TValue>? items)")
                 .AppendLine("{")
                 .IncrementIndent()
-                .AppendLine("if (items == null)")
+                .AppendLine("if (items is null)")
                 .AppendLine("    return 0;")
                 .AppendLine();
 
@@ -501,7 +524,7 @@ public static class EquatableWriter
                 .AppendLine("static int HashSetHashCode<T>(global::System.Collections.Generic.IEnumerable<T>? items)")
                 .AppendLine("{")
                 .IncrementIndent()
-                .AppendLine("if (items == null)")
+                .AppendLine("if (items is null)")
                 .AppendLine("    return 0;")
                 .AppendLine()
                 .Append("int hashCode = ")
@@ -524,7 +547,7 @@ public static class EquatableWriter
                 .AppendLine("static int SequenceHashCode<T>(global::System.Collections.Generic.IEnumerable<T>? items)")
                 .AppendLine("{")
                 .IncrementIndent()
-                .AppendLine("if (items == null)")
+                .AppendLine("if (items is null)")
                 .AppendLine("    return 0;")
                 .AppendLine()
                 .Append("int hashCode = ")

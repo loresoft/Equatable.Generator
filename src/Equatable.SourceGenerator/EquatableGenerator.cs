@@ -72,8 +72,12 @@ public class EquatableGenerator : IIncrementalGenerator
         if (context.TargetSymbol is not INamedTypeSymbol targetSymbol)
             return null;
 
+        var fullyQualified = targetSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var classNamespace = targetSymbol.ContainingNamespace.ToDisplayString();
         var className = targetSymbol.Name;
+
+        // support nested types
+        var containingTypes = GetContainingTypes(targetSymbol);
 
         var baseHashCode = GetBaseHashCodeMethod(targetSymbol);
         var baseEquals = GetBaseEqualsMethod(targetSymbol);
@@ -99,8 +103,10 @@ public class EquatableGenerator : IIncrementalGenerator
             seedHash = (seedHash * HashFactor) + GetFNVHashCode(property.PropertyName);
 
         var entity = new EquatableClass(
+            FullyQualified: fullyQualified,
             EntityNamespace: classNamespace,
             EntityName: className,
+            ContainingTypes: containingTypes,
             Properties: propertyArray,
             IsRecord: targetSymbol.IsRecord,
             IsValueType: targetSymbol.IsValueType,
@@ -144,7 +150,8 @@ public class EquatableGenerator : IIncrementalGenerator
 
     private static EquatableProperty CreateProperty(IPropertySymbol propertySymbol)
     {
-        var propertyType = propertySymbol.Type.ToDisplayString();
+        var format = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+        var propertyType = propertySymbol.Type.ToDisplayString(format);
         var propertyName = propertySymbol.Name;
 
         // look for custom equality
@@ -286,6 +293,31 @@ public class EquatableGenerator : IIncrementalGenerator
         };
     }
 
+    private static EquatableArray<ContainingClass> GetContainingTypes(INamedTypeSymbol targetSymbol)
+    {
+        if (targetSymbol.ContainingType is null)
+            return Array.Empty<ContainingClass>();
+
+        var list = new List<ContainingClass>();
+        var currentSymbol = targetSymbol.ContainingType;
+
+        while (currentSymbol != null)
+        {
+            var containingClass = new ContainingClass(
+                EntityName: currentSymbol.Name,
+                IsRecord: currentSymbol.IsRecord,
+                IsValueType: currentSymbol.IsValueType
+            );
+
+            list.Add(containingClass);
+
+            currentSymbol = currentSymbol.ContainingType;
+        }
+
+        list.Reverse();
+
+        return list.ToArray();
+    }
 
     private static IMethodSymbol? GetBaseHashCodeMethod(INamedTypeSymbol targetSymbol)
     {

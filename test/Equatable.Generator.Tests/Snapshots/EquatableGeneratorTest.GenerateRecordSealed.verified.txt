@@ -6,35 +6,35 @@ namespace Equatable.Entities
     partial record class StatusRecord
     {
         /// <inheritdoc />
-        public bool Equals(StatusRecord? other)
+        public bool Equals(global::Equatable.Entities.StatusRecord? other)
         {
-            return other is not null
-                && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(Id, other.Id)
-                && global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(Name, other.Name)
-                && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(Description, other.Description)
-                && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(DisplayOrder, other.DisplayOrder)
-                && global::System.Collections.Generic.EqualityComparer<bool>.Default.Equals(IsActive, other.IsActive)
-                && global::System.Collections.Generic.EqualityComparer<System.DateTimeOffset>.Default.Equals(Created, other.Created)
-                && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(CreatedBy, other.CreatedBy)
-                && global::System.Collections.Generic.EqualityComparer<System.DateTimeOffset>.Default.Equals(Updated, other.Updated)
-                && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(UpdatedBy, other.UpdatedBy)
-                && global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(RowVersion, other.RowVersion);
+            return !(other is null)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(Id, other.Id)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.Equals(Name, other.Name)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Description, other.Description)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(DisplayOrder, other.DisplayOrder)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Boolean>.Default.Equals(IsActive, other.IsActive)
+                && global::System.Collections.Generic.EqualityComparer<global::System.DateTimeOffset>.Default.Equals(Created, other.Created)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(CreatedBy, other.CreatedBy)
+                && global::System.Collections.Generic.EqualityComparer<global::System.DateTimeOffset>.Default.Equals(Updated, other.Updated)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(UpdatedBy, other.UpdatedBy)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Int64>.Default.Equals(RowVersion, other.RowVersion);
 
         }
 
         /// <inheritdoc />
         public override int GetHashCode(){
             int hashCode = -386483248;
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(Id!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string>.Default.GetHashCode(Name!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(Description!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(DisplayOrder!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<bool>.Default.GetHashCode(IsActive!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<System.DateTimeOffset>.Default.GetHashCode(Created!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(CreatedBy!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<System.DateTimeOffset>.Default.GetHashCode(Updated!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(UpdatedBy!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<long>.Default.GetHashCode(RowVersion!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(Id!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.GetHashCode(Name!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Description!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(DisplayOrder!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Boolean>.Default.GetHashCode(IsActive!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.DateTimeOffset>.Default.GetHashCode(Created!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(CreatedBy!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.DateTimeOffset>.Default.GetHashCode(Updated!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(UpdatedBy!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int64>.Default.GetHashCode(RowVersion!);
             return hashCode;
 
         }

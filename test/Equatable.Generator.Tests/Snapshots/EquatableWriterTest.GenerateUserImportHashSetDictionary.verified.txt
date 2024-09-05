@@ -3,12 +3,12 @@
 
 namespace Equatable.Entities
 {
-    partial class UserImport : global::System.IEquatable<UserImport?>
+    partial class UserImport : global::System.IEquatable<global::Equatable.Entities.UserImport?>
     {
         /// <inheritdoc />
-        public bool Equals(UserImport? other)
+        public bool Equals(global::Equatable.Entities.UserImport? other)
         {
-            return other is not null
+            return !(other is null)
                 && global::System.StringComparer.OrdinalIgnoreCase.Equals(EmailAddress, other.EmailAddress)
                 && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(DisplayName, other.DisplayName)
                 && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(FirstName, other.FirstName)
@@ -23,7 +23,7 @@ namespace Equatable.Entities
                 if (global::System.Object.ReferenceEquals(left, right))
                     return true;
 
-                if (left == null || right == null)
+                if (left is null || right is null)
                     return false;
 
                 if (left.Count != right.Count)
@@ -47,7 +47,7 @@ namespace Equatable.Entities
                 if (global::System.Object.ReferenceEquals(left, right))
                     return true;
 
-                if (left == null || right == null)
+                if (left is null || right is null)
                     return false;
 
                 if (left is global::System.Collections.Generic.ISet<T> leftSet)
@@ -65,17 +65,17 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {
-            return Equals(obj as UserImport);
+            return Equals(obj as global::Equatable.Entities.UserImport);
         }
 
         /// <inheritdoc />
-        public static bool operator ==(UserImport? left, UserImport? right)
+        public static bool operator ==(global::Equatable.Entities.UserImport? left, global::Equatable.Entities.UserImport? right)
         {
-            return global::System.Collections.Generic.EqualityComparer<UserImport?>.Default.Equals(left, right);
+            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.UserImport?>.Default.Equals(left, right);
         }
 
         /// <inheritdoc />
-        public static bool operator !=(UserImport? left, UserImport? right)
+        public static bool operator !=(global::Equatable.Entities.UserImport? left, global::Equatable.Entities.UserImport? right)
         {
             return !(left == right);
         }
@@ -95,7 +95,7 @@ namespace Equatable.Entities
 
             static int DictionaryHashCode<TKey, TValue>(global::System.Collections.Generic.IDictionary<TKey, TValue>? items)
             {
-                if (items == null)
+                if (items is null)
                     return 0;
 
                 int hashCode = -1758092530;
@@ -112,7 +112,7 @@ namespace Equatable.Entities
 
             static int HashSetHashCode<T>(global::System.Collections.Generic.IEnumerable<T>? items)
             {
-                if (items == null)
+                if (items is null)
                     return 0;
 
                 int hashCode = -1758092530;

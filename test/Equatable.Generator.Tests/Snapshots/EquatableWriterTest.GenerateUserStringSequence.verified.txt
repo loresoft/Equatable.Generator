@@ -3,12 +3,12 @@
 
 namespace Equatable.Entities
 {
-    partial class User : global::System.IEquatable<User?>
+    partial class User : global::System.IEquatable<global::Equatable.Entities.User?>
     {
         /// <inheritdoc />
-        public bool Equals(User? other)
+        public bool Equals(global::Equatable.Entities.User? other)
         {
-            return other is not null
+            return !(other is null)
                 && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(Id, other.Id)
                 && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(FirstName, other.FirstName)
                 && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(LastName, other.LastName)
@@ -21,7 +21,7 @@ namespace Equatable.Entities
                 if (global::System.Object.ReferenceEquals(left, right))
                     return true;
 
-                if (left == null || right == null)
+                if (left is null || right is null)
                     return false;
 
                 return global::System.Linq.Enumerable.SequenceEqual(left, right, global::System.Collections.Generic.EqualityComparer<T>.Default);
@@ -32,17 +32,17 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {
-            return Equals(obj as User);
+            return Equals(obj as global::Equatable.Entities.User);
         }
 
         /// <inheritdoc />
-        public static bool operator ==(User? left, User? right)
+        public static bool operator ==(global::Equatable.Entities.User? left, global::Equatable.Entities.User? right)
         {
-            return global::System.Collections.Generic.EqualityComparer<User?>.Default.Equals(left, right);
+            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.User?>.Default.Equals(left, right);
         }
 
         /// <inheritdoc />
-        public static bool operator !=(User? left, User? right)
+        public static bool operator !=(global::Equatable.Entities.User? left, global::Equatable.Entities.User? right)
         {
             return !(left == right);
         }
@@ -60,7 +60,7 @@ namespace Equatable.Entities
 
             static int SequenceHashCode<T>(global::System.Collections.Generic.IEnumerable<T>? items)
             {
-                if (items == null)
+                if (items is null)
                     return 0;
 
                 int hashCode = -1758092530;

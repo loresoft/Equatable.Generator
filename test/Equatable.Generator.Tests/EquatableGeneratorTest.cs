@@ -357,6 +357,35 @@ public partial class Audit
             .ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
+    [Fact]
+    public Task GenerateNestedComparer()
+    {
+        var source = @"
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+public partial class Nested
+{
+    [Equatable]
+    public partial class Animal
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public string? Type { get; set; }
+    }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        diagnostics.Should().BeEmpty();
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
 
     private static (ImmutableArray<Diagnostic> Diagnostics, string Output) GetGeneratedOutput<T>(string source)
         where T : IIncrementalGenerator, new()

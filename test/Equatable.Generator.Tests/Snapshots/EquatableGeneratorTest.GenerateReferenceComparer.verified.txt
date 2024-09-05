@@ -3,18 +3,18 @@
 
 namespace Equatable.Entities
 {
-    partial class Audit : global::System.IEquatable<Audit?>
+    partial class Audit : global::System.IEquatable<global::Equatable.Entities.Audit?>
     {
         /// <inheritdoc />
-        public bool Equals(Audit? other)
+        public bool Equals(global::Equatable.Entities.Audit? other)
         {
-            return other is not null
-                && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(Id, other.Id)
-                && global::System.Collections.Generic.EqualityComparer<System.DateTime>.Default.Equals(Date, other.Date)
-                && global::System.Collections.Generic.EqualityComparer<int?>.Default.Equals(UserId, other.UserId)
-                && global::System.Collections.Generic.EqualityComparer<int?>.Default.Equals(TaskId, other.TaskId)
-                && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(Content, other.Content)
-                && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(UserName, other.UserName)
+            return !(other is null)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(Id, other.Id)
+                && global::System.Collections.Generic.EqualityComparer<global::System.DateTime>.Default.Equals(Date, other.Date)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Int32?>.Default.Equals(UserId, other.UserId)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Int32?>.Default.Equals(TaskId, other.TaskId)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Content, other.Content)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(UserName, other.UserName)
                 && global::System.Object.ReferenceEquals(Lock, other.Lock);
 
         }
@@ -22,17 +22,17 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {
-            return Equals(obj as Audit);
+            return Equals(obj as global::Equatable.Entities.Audit);
         }
 
         /// <inheritdoc />
-        public static bool operator ==(Audit? left, Audit? right)
+        public static bool operator ==(global::Equatable.Entities.Audit? left, global::Equatable.Entities.Audit? right)
         {
-            return global::System.Collections.Generic.EqualityComparer<Audit?>.Default.Equals(left, right);
+            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.Audit?>.Default.Equals(left, right);
         }
 
         /// <inheritdoc />
-        public static bool operator !=(Audit? left, Audit? right)
+        public static bool operator !=(global::Equatable.Entities.Audit? left, global::Equatable.Entities.Audit? right)
         {
             return !(left == right);
         }
@@ -40,12 +40,12 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override int GetHashCode(){
             int hashCode = 374357566;
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(Id!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<System.DateTime>.Default.GetHashCode(Date!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<int?>.Default.GetHashCode(UserId!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<int?>.Default.GetHashCode(TaskId!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(Content!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(UserName!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(Id!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.DateTime>.Default.GetHashCode(Date!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32?>.Default.GetHashCode(UserId!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32?>.Default.GetHashCode(TaskId!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Content!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(UserName!);
             hashCode = (hashCode * -1521134295) + global::System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Lock!);
             return hashCode;
 

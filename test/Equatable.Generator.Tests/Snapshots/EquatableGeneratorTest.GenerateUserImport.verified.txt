@@ -3,18 +3,18 @@
 
 namespace Equatable.Entities
 {
-    partial class UserImport : global::System.IEquatable<UserImport?>
+    partial class UserImport : global::System.IEquatable<global::Equatable.Entities.UserImport?>
     {
         /// <inheritdoc />
-        public bool Equals(UserImport? other)
+        public bool Equals(global::Equatable.Entities.UserImport? other)
         {
-            return other is not null
+            return !(other is null)
                 && global::System.StringComparer.OrdinalIgnoreCase.Equals(EmailAddress, other.EmailAddress)
-                && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(DisplayName, other.DisplayName)
-                && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(FirstName, other.FirstName)
-                && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(LastName, other.LastName)
-                && global::System.Collections.Generic.EqualityComparer<System.DateTimeOffset?>.Default.Equals(LockoutEnd, other.LockoutEnd)
-                && global::System.Collections.Generic.EqualityComparer<System.DateTimeOffset?>.Default.Equals(LastLogin, other.LastLogin)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(DisplayName, other.DisplayName)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(FirstName, other.FirstName)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(LastName, other.LastName)
+                && global::System.Collections.Generic.EqualityComparer<global::System.DateTimeOffset?>.Default.Equals(LockoutEnd, other.LockoutEnd)
+                && global::System.Collections.Generic.EqualityComparer<global::System.DateTimeOffset?>.Default.Equals(LastLogin, other.LastLogin)
                 && HashSetEquals(Roles, other.Roles)
                 && DictionaryEquals(Permissions, other.Permissions)
                 && SequenceEquals(History, other.History);
@@ -24,7 +24,7 @@ namespace Equatable.Entities
                 if (global::System.Object.ReferenceEquals(left, right))
                     return true;
 
-                if (left == null || right == null)
+                if (left is null || right is null)
                     return false;
 
                 if (left.Count != right.Count)
@@ -48,7 +48,7 @@ namespace Equatable.Entities
                 if (global::System.Object.ReferenceEquals(left, right))
                     return true;
 
-                if (left == null || right == null)
+                if (left is null || right is null)
                     return false;
 
                 if (left is global::System.Collections.Generic.ISet<T> leftSet)
@@ -66,7 +66,7 @@ namespace Equatable.Entities
                 if (global::System.Object.ReferenceEquals(left, right))
                     return true;
 
-                if (left == null || right == null)
+                if (left is null || right is null)
                     return false;
 
                 return global::System.Linq.Enumerable.SequenceEqual(left, right, global::System.Collections.Generic.EqualityComparer<T>.Default);
@@ -77,17 +77,17 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {
-            return Equals(obj as UserImport);
+            return Equals(obj as global::Equatable.Entities.UserImport);
         }
 
         /// <inheritdoc />
-        public static bool operator ==(UserImport? left, UserImport? right)
+        public static bool operator ==(global::Equatable.Entities.UserImport? left, global::Equatable.Entities.UserImport? right)
         {
-            return global::System.Collections.Generic.EqualityComparer<UserImport?>.Default.Equals(left, right);
+            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.UserImport?>.Default.Equals(left, right);
         }
 
         /// <inheritdoc />
-        public static bool operator !=(UserImport? left, UserImport? right)
+        public static bool operator !=(global::Equatable.Entities.UserImport? left, global::Equatable.Entities.UserImport? right)
         {
             return !(left == right);
         }
@@ -96,11 +96,11 @@ namespace Equatable.Entities
         public override int GetHashCode(){
             int hashCode = 275986352;
             hashCode = (hashCode * -1521134295) + global::System.StringComparer.OrdinalIgnoreCase.GetHashCode(EmailAddress!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(DisplayName!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(FirstName!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(LastName!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<System.DateTimeOffset?>.Default.GetHashCode(LockoutEnd!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<System.DateTimeOffset?>.Default.GetHashCode(LastLogin!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(DisplayName!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(FirstName!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(LastName!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.DateTimeOffset?>.Default.GetHashCode(LockoutEnd!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.DateTimeOffset?>.Default.GetHashCode(LastLogin!);
             hashCode = (hashCode * -1521134295) + HashSetHashCode(Roles);
             hashCode = (hashCode * -1521134295) + DictionaryHashCode(Permissions);
             hashCode = (hashCode * -1521134295) + SequenceHashCode(History);
@@ -108,7 +108,7 @@ namespace Equatable.Entities
 
             static int DictionaryHashCode<TKey, TValue>(global::System.Collections.Generic.IDictionary<TKey, TValue>? items)
             {
-                if (items == null)
+                if (items is null)
                     return 0;
 
                 int hashCode = 275986352;
@@ -125,7 +125,7 @@ namespace Equatable.Entities
 
             static int HashSetHashCode<T>(global::System.Collections.Generic.IEnumerable<T>? items)
             {
-                if (items == null)
+                if (items is null)
                     return 0;
 
                 int hashCode = 275986352;
@@ -139,7 +139,7 @@ namespace Equatable.Entities
 
             static int SequenceHashCode<T>(global::System.Collections.Generic.IEnumerable<T>? items)
             {
-                if (items == null)
+                if (items is null)
                     return 0;
 
                 int hashCode = 275986352;

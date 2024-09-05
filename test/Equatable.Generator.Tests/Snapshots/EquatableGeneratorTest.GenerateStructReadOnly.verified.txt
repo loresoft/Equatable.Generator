@@ -3,33 +3,33 @@
 
 namespace Equatable.Entities
 {
-    partial struct StatusReadOnly : global::System.IEquatable<StatusReadOnly>
+    partial struct StatusReadOnly : global::System.IEquatable<global::Equatable.Entities.StatusReadOnly>
     {
         /// <inheritdoc />
-        public bool Equals(StatusReadOnly other)
+        public bool Equals(global::Equatable.Entities.StatusReadOnly other)
         {
-            return global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(Id, other.Id)
-                && global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(Name, other.Name)
-                && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(Description, other.Description)
-                && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(DisplayOrder, other.DisplayOrder)
-                && global::System.Collections.Generic.EqualityComparer<bool>.Default.Equals(IsActive, other.IsActive);
+            return global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(Id, other.Id)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.Equals(Name, other.Name)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Description, other.Description)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(DisplayOrder, other.DisplayOrder)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Boolean>.Default.Equals(IsActive, other.IsActive);
 
         }
 
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {
-            return obj is StatusReadOnly instance && Equals(instance);
+            return obj is global::Equatable.Entities.StatusReadOnly instance && Equals(instance);
         }
 
         /// <inheritdoc />
-        public static bool operator ==(StatusReadOnly left, StatusReadOnly right)
+        public static bool operator ==(global::Equatable.Entities.StatusReadOnly left, global::Equatable.Entities.StatusReadOnly right)
         {
-            return global::System.Collections.Generic.EqualityComparer<StatusReadOnly>.Default.Equals(left, right);
+            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.StatusReadOnly>.Default.Equals(left, right);
         }
 
         /// <inheritdoc />
-        public static bool operator !=(StatusReadOnly left, StatusReadOnly right)
+        public static bool operator !=(global::Equatable.Entities.StatusReadOnly left, global::Equatable.Entities.StatusReadOnly right)
         {
             return !(left == right);
         }
@@ -37,11 +37,11 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override int GetHashCode(){
             int hashCode = -637655923;
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(Id!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string>.Default.GetHashCode(Name!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(Description!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(DisplayOrder!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<bool>.Default.GetHashCode(IsActive!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(Id!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.GetHashCode(Name!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Description!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(DisplayOrder!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Boolean>.Default.GetHashCode(IsActive!);
             return hashCode;
 
         }

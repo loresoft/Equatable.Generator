@@ -4,7 +4,7 @@ namespace Equatable.Entities;
 
 public partial class Nested
 {
-    //[Equatable]
+    [Equatable]
     public partial class Animal
     {
         public int Id { get; set; }

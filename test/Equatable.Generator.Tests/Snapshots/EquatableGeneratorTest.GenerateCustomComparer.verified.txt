@@ -3,14 +3,14 @@
 
 namespace Equatable.Entities
 {
-    partial class CustomComparer : global::System.IEquatable<CustomComparer?>
+    partial class CustomComparer : global::System.IEquatable<global::Equatable.Entities.CustomComparer?>
     {
         /// <inheritdoc />
-        public bool Equals(CustomComparer? other)
+        public bool Equals(global::Equatable.Entities.CustomComparer? other)
         {
-            return other is not null
-                && global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(Id, other.Id)
-                && global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(Name, other.Name)
+            return !(other is null)
+                && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(Id, other.Id)
+                && global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.Equals(Name, other.Name)
                 && global::Equatable.Entities.LengthEqualityComparer.Default.Equals(Key, other.Key);
 
         }
@@ -18,17 +18,17 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {
-            return Equals(obj as CustomComparer);
+            return Equals(obj as global::Equatable.Entities.CustomComparer);
         }
 
         /// <inheritdoc />
-        public static bool operator ==(CustomComparer? left, CustomComparer? right)
+        public static bool operator ==(global::Equatable.Entities.CustomComparer? left, global::Equatable.Entities.CustomComparer? right)
         {
-            return global::System.Collections.Generic.EqualityComparer<CustomComparer?>.Default.Equals(left, right);
+            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.CustomComparer?>.Default.Equals(left, right);
         }
 
         /// <inheritdoc />
-        public static bool operator !=(CustomComparer? left, CustomComparer? right)
+        public static bool operator !=(global::Equatable.Entities.CustomComparer? left, global::Equatable.Entities.CustomComparer? right)
         {
             return !(left == right);
         }
@@ -36,8 +36,8 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override int GetHashCode(){
             int hashCode = -749929470;
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(Id!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string>.Default.GetHashCode(Name!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(Id!);
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.GetHashCode(Name!);
             hashCode = (hashCode * -1521134295) + global::Equatable.Entities.LengthEqualityComparer.Default.GetHashCode(Key!);
             return hashCode;
 
