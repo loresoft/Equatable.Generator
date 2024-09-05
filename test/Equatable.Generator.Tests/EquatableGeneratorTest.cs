@@ -26,6 +26,7 @@ public partial class UserImport
     [StringEquality(StringComparison.OrdinalIgnoreCase)]
     public string EmailAddress { get; set; } = null!;
 
+    [JsonPropertyName(""name"")]
     public string? DisplayName { get; set; }
 
     public string? FirstName { get; set; }
@@ -36,6 +37,7 @@ public partial class UserImport
 
     public DateTimeOffset? LastLogin { get; set; }
 
+    [JsonIgnore]
     [IgnoreEquality]
     public string FullName => $""{FirstName} {LastName}"";
 
@@ -387,6 +389,158 @@ public partial class Nested
             .ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
+
+    [Fact]
+    public Task GenerateInvalidStringEquality()
+    {
+        var source = @"
+using System;
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    public string EmailAddress { get; set; } = null!;
+
+    [JsonPropertyName(""name"")]
+    public string? DisplayName { get; set; }
+
+    public string? FirstName { get; set; }
+
+    public string? LastName { get; set; }
+
+    [StringEquality(StringComparison.OrdinalIgnoreCase)]
+    public DateTimeOffset? LockoutEnd { get; set; }
+
+    public DateTimeOffset? LastLogin { get; set; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        diagnostics.Should().NotBeEmpty();
+        diagnostics[0].Id.Should().Be("EQ0010");
+
+        return Task.CompletedTask;
+    }
+
+    [Fact]
+    public Task GenerateInvalidSequenceEquality()
+    {
+        var source = @"
+using System;
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    [StringEquality(StringComparison.OrdinalIgnoreCase)]
+    public string EmailAddress { get; set; } = null!;
+
+    [JsonPropertyName(""name"")]
+    public string? DisplayName { get; set; }
+
+    public string? FirstName { get; set; }
+
+    public string? LastName { get; set; }
+
+    public DateTimeOffset? LockoutEnd { get; set; }
+
+    [SequenceEquality]
+    public DateTimeOffset? LastLogin { get; set; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        diagnostics.Should().NotBeEmpty();
+        diagnostics[0].Id.Should().Be("EQ0013");
+
+        return Task.CompletedTask;
+    }
+
+    [Fact]
+    public Task GenerateInvalidHashSetEquality()
+    {
+        var source = @"
+using System;
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    [StringEquality(StringComparison.OrdinalIgnoreCase)]
+    public string EmailAddress { get; set; } = null!;
+
+    [JsonPropertyName(""name"")]
+    public string? DisplayName { get; set; }
+
+    public string? FirstName { get; set; }
+
+    public string? LastName { get; set; }
+
+    public DateTimeOffset? LockoutEnd { get; set; }
+
+    [HashSetEquality]
+    public DateTimeOffset? LastLogin { get; set; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        diagnostics.Should().NotBeEmpty();
+        diagnostics[0].Id.Should().Be("EQ0012");
+
+        return Task.CompletedTask;
+    }
+
+    [Fact]
+    public Task GenerateInvalidDictionaryEquality()
+    {
+        var source = @"
+using System;
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    [StringEquality(StringComparison.OrdinalIgnoreCase)]
+    public string EmailAddress { get; set; } = null!;
+
+    [JsonPropertyName(""name"")]
+    public string? DisplayName { get; set; }
+
+    public string? FirstName { get; set; }
+
+    public string? LastName { get; set; }
+
+    public DateTimeOffset? LockoutEnd { get; set; }
+
+    [DictionaryEquality]
+    public DateTimeOffset? LastLogin { get; set; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        diagnostics.Should().NotBeEmpty();
+        diagnostics[0].Id.Should().Be("EQ0011");
+
+        return Task.CompletedTask;
+    }
+
     private static (ImmutableArray<Diagnostic> Diagnostics, string Output) GetGeneratedOutput<T>(string source)
         where T : IIncrementalGenerator, new()
     {
@@ -416,5 +570,4 @@ public partial class Nested
 
         return (diagnostics, trees.Count != originalTreeCount ? trees[^1].ToString() : string.Empty);
     }
-
 }

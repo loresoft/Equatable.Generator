@@ -72,6 +72,8 @@ public class EquatableGenerator : IIncrementalGenerator
         if (context.TargetSymbol is not INamedTypeSymbol targetSymbol)
             return null;
 
+        var diagnostics = new List<Diagnostic>();
+
         var fullyQualified = targetSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var classNamespace = targetSymbol.ContainingNamespace.ToDisplayString();
         var className = targetSymbol.Name;
@@ -86,7 +88,7 @@ public class EquatableGenerator : IIncrementalGenerator
         var propertySymbols = GetProperties(targetSymbol, baseHashCode == null && baseEquatable == null);
 
         var propertyArray = propertySymbols
-            .Select(CreateProperty)
+            .Select(symbol => CreateProperty(diagnostics, symbol))
             .ToArray() ?? [];
 
         // the seed value of the hash code method
@@ -116,7 +118,7 @@ public class EquatableGenerator : IIncrementalGenerator
             SeedHash: seedHash
         );
 
-        return new EquatableContext(entity, null);
+        return new EquatableContext(entity, diagnostics.ToArray());
     }
 
 
@@ -148,7 +150,7 @@ public class EquatableGenerator : IIncrementalGenerator
         return properties.Values;
     }
 
-    private static EquatableProperty CreateProperty(IPropertySymbol propertySymbol)
+    private static EquatableProperty CreateProperty(List<Diagnostic> diagnostics, IPropertySymbol propertySymbol)
     {
         var format = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
         var propertyType = propertySymbol.Type.ToDisplayString(format);
@@ -172,6 +174,17 @@ public class EquatableGenerator : IIncrementalGenerator
             if (!comparerType.HasValue)
                 continue;
 
+            var diagnostic = ValidateComparer(propertySymbol, comparerType);
+            if (diagnostic != null)
+            {
+                diagnostics.Add(diagnostic);
+
+                return new EquatableProperty(
+                    propertyName,
+                    propertyType,
+                    ComparerTypes.Default);
+            }
+
             return new EquatableProperty(
                 propertyName,
                 propertyType,
@@ -184,6 +197,63 @@ public class EquatableGenerator : IIncrementalGenerator
             propertyName,
             propertyType,
             ComparerTypes.Default);
+    }
+
+    private static Diagnostic? ValidateComparer(IPropertySymbol propertySymbol, ComparerTypes? comparerType)
+    {
+        // don't need to validate these types
+        if (comparerType is null or ComparerTypes.Default or ComparerTypes.Reference or ComparerTypes.Custom)
+            return null;
+
+        if (comparerType == ComparerTypes.String)
+        {
+            if (IsString(propertySymbol.Type))
+                return null;
+
+            return Diagnostic.Create(
+                DiagnosticDescriptors.InvalidStringEqualityAttributeUsage,
+                propertySymbol.Locations.FirstOrDefault(),
+                propertySymbol.Name
+            );
+        }
+
+        if (comparerType == ComparerTypes.Dictionary)
+        {
+            if (propertySymbol.Type.AllInterfaces.Any(IsDictionary))
+                return null;
+
+            return Diagnostic.Create(
+                DiagnosticDescriptors.InvalidDictionaryEqualityAttributeUsage,
+                propertySymbol.Locations.FirstOrDefault(),
+                propertySymbol.Name
+            );
+        }
+
+        if (comparerType == ComparerTypes.HashSet)
+        {
+            if (propertySymbol.Type.AllInterfaces.Any(IsEnumerable))
+                return null;
+
+            return Diagnostic.Create(
+                DiagnosticDescriptors.InvalidHashSetEqualityAttributeUsage,
+                propertySymbol.Locations.FirstOrDefault(),
+                propertySymbol.Name
+            );
+        }
+
+        if (comparerType == ComparerTypes.Sequence)
+        {
+            if (propertySymbol.Type.AllInterfaces.Any(IsEnumerable))
+                return null;
+
+            return Diagnostic.Create(
+                DiagnosticDescriptors.InvalidSequenceEqualityAttributeUsage,
+                propertySymbol.Locations.FirstOrDefault(),
+                propertySymbol.Name
+            );
+        }
+
+        return null;
     }
 
 
@@ -292,6 +362,62 @@ public class EquatableGenerator : IIncrementalGenerator
             ContainingNamespace.Name: "System"
         };
     }
+
+    private static bool IsEnumerable(INamedTypeSymbol targetSymbol)
+    {
+        return targetSymbol is
+        {
+            Name: "IEnumerable",
+            IsGenericType: true,
+            TypeArguments.Length: 1,
+            TypeParameters.Length: 1,
+            ContainingNamespace:
+            {
+                Name: "Generic",
+                ContainingNamespace:
+                {
+                    Name: "Collections",
+                    ContainingNamespace:
+                    {
+                        Name: "System"
+                    }
+                }
+            }
+        };
+    }
+
+    private static bool IsDictionary(INamedTypeSymbol targetSymbol)
+    {
+        return targetSymbol is
+        {
+            Name: "IDictionary",
+            IsGenericType: true,
+            TypeArguments.Length: 2,
+            TypeParameters.Length: 2,
+            ContainingNamespace:
+            {
+                Name: "Generic",
+                ContainingNamespace:
+                {
+                    Name: "Collections",
+                    ContainingNamespace:
+                    {
+                        Name: "System"
+                    }
+                }
+            }
+        };
+    }
+
+    private static bool IsString(ITypeSymbol targetSymbol)
+    {
+        return targetSymbol is
+        {
+            Name: nameof(String),
+            ContainingNamespace.Name: "System"
+        };
+    }
+
 
     private static EquatableArray<ContainingClass> GetContainingTypes(INamedTypeSymbol targetSymbol)
     {
