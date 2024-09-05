@@ -25,7 +25,7 @@ Add the nuget package to your projects.
 
 `dotnet add package Equatable.Generator`
 
-Prevent including Equatable.Generator as a dependence
+Prevent including Equatable.Generator as a dependency
 
 ```xml
 <PackageReference Include="Equatable.Generator" PrivateAssets="all" />
