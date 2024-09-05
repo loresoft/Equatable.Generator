@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
 using Equatable.Attributes;
 
 namespace Equatable.Entities;
@@ -10,6 +12,7 @@ public partial class UserImport
     [StringEquality(StringComparison.OrdinalIgnoreCase)]
     public string EmailAddress { get; set; } = null!;
 
+    [JsonPropertyName("name")]
     public string? DisplayName { get; set; }
 
     public string? FirstName { get; set; }
@@ -20,6 +23,7 @@ public partial class UserImport
 
     public DateTimeOffset? LastLogin { get; set; }
 
+    [JsonIgnore]
     [IgnoreEquality]
     public string FullName => $"{FirstName} {LastName}";
 

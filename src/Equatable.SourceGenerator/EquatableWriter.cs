@@ -124,6 +124,13 @@ public static class EquatableWriter
 
                     break;
                 case ComparerTypes.Reference:
+                    codeBuilder
+                        .Append(" global::System.Object.ReferenceEquals(")
+                        .Append(entityProperty.PropertyName)
+                        .Append(", other.")
+                        .Append(entityProperty.PropertyName)
+                        .Append(")");
+
                     break;
                 case ComparerTypes.Sequence:
                     codeBuilder
@@ -395,6 +402,11 @@ public static class EquatableWriter
                         .AppendLine(");");
                     break;
                 case ComparerTypes.Reference:
+                    codeBuilder
+                        .Append("hashCode = (hashCode * -1521134295) + ")
+                        .Append("global::System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(")
+                        .Append(entityProperty.PropertyName)
+                        .AppendLine("!);");
                     break;
                 case ComparerTypes.Sequence:
                     codeBuilder

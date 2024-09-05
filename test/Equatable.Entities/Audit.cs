@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 using Equatable.Attributes;
 
@@ -13,4 +12,7 @@ public partial class Audit : ModelBase
     public int? TaskId { get; set; }
     public string? Content { get; set; }
     public string? UserName { get; set; }
+
+    [ReferenceEquality]
+    public object? Lock { get; set; }
 }

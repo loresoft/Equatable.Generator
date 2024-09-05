@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Equatable.Generator\Equatable.Generator.csproj" />
     <ProjectReference Include="..\..\src\Equatable.SourceGenerator\Equatable.SourceGenerator.csproj">
       <OutputItemType>Analyzer</OutputItemType>

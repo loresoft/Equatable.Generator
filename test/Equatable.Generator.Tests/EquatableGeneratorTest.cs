@@ -66,7 +66,6 @@ public partial class UserImport
         var source = @"
 using System;
 using System.Collections.Generic;
-
 using Equatable.Attributes;
 
 namespace Equatable.Entities;
@@ -75,15 +74,10 @@ namespace Equatable.Entities;
 public abstract partial class ModelBase
 {
     public int Id { get; set; }
-
     public DateTimeOffset Created { get; set; }
-
     public string? CreatedBy { get; set; }
-
     public DateTimeOffset Updated { get; set; }
-
     public string? UpdatedBy { get; set; }
-
     public long RowVersion { get; set; }
 }
 
@@ -113,7 +107,6 @@ public partial class Priority : ModelBase
         var source = @"
 using System;
 using System.Collections.Generic;
-
 using Equatable.Attributes;
 
 namespace Equatable.Entities;
@@ -121,15 +114,10 @@ namespace Equatable.Entities;
 public abstract partial class ModelBase : IEquatable<ModelBase?>
 {
     public int Id { get; set; }
-
     public DateTimeOffset Created { get; set; }
-
     public string? CreatedBy { get; set; }
-
     public DateTimeOffset Updated { get; set; }
-
     public string? UpdatedBy { get; set; }
-
     public long RowVersion { get; set; }
 
     public override bool Equals(object? obj)
@@ -294,6 +282,81 @@ public readonly partial struct StatusReadOnly
             .UseDirectory("Snapshots")
             .ScrubLinesContaining("GeneratedCodeAttribute");
     }
+
+    [Fact]
+    public Task GenerateCustomComparer()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class CustomComparer
+{
+    public int Id { get; set; }
+
+    public string Name { get; set; } = null!;
+
+    [EqualityComparer(typeof(LengthEqualityComparer))]
+    public string? Key { get; set; }
+}
+
+public class LengthEqualityComparer : IEqualityComparer<string?>
+{
+    public static readonly LengthEqualityComparer Default = new();
+
+    public bool Equals(string? x, string? y) => x?.Length == y?.Length;
+
+    public int GetHashCode(string? obj) => obj?.Length.GetHashCode() ?? 0;
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        diagnostics.Should().BeEmpty();
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateReferenceComparer()
+    {
+        var source = @"
+using System;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Audit
+{
+    public int Id { get; set; }
+    public DateTime Date { get; set; }
+    public int? UserId { get; set; }
+    public int? TaskId { get; set; }
+    public string? Content { get; set; }
+    public string? UserName { get; set; }
+
+    [ReferenceEquality]
+    public object? Lock { get; set; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        diagnostics.Should().BeEmpty();
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
 
     private static (ImmutableArray<Diagnostic> Diagnostics, string Output) GetGeneratedOutput<T>(string source)
         where T : IIncrementalGenerator, new()

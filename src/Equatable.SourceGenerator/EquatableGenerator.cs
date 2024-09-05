@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Xml.Linq;
 
 using Equatable.SourceGenerator.Models;
@@ -200,11 +201,15 @@ public class EquatableGenerator : IIncrementalGenerator
 
     private static (ComparerTypes? comparerType, string? comparerName, string? comparerInstance) GetStringComparer(AttributeData? attribute)
     {
-        var argument = attribute?.ConstructorArguments.FirstOrDefault();
-        if (argument == null || !argument.HasValue)
+        if (attribute == null || attribute.ConstructorArguments.Length != 1)
+            return (ComparerTypes.Default, null, null);
+
+        var argument = attribute.ConstructorArguments[0];
+
+        if (argument.Value is not int value)
             return (ComparerTypes.String, "CurrentCulture", null);
 
-        var comparerName = argument?.Value switch
+        var comparerName = value switch
         {
             0 => "CurrentCulture",
             1 => "CurrentCultureIgnoreCase",
@@ -220,30 +225,19 @@ public class EquatableGenerator : IIncrementalGenerator
 
     private static (ComparerTypes? comparerType, string? comparerName, string? comparerInstance) GetEqualityComparer(AttributeData? attribute)
     {
-        if (attribute == null)
+        if (attribute == null || attribute.ConstructorArguments.Length != 2)
             return (ComparerTypes.Default, null, null);
 
-        // attribute constructor
-        var comparerType = attribute.ConstructorArguments.FirstOrDefault();
-        if (comparerType.Value is INamedTypeSymbol typeSymbol)
-        {
-            return (ComparerTypes.Custom, typeSymbol.ToDisplayString(), null);
-        }
+        var comparerArgument = attribute.ConstructorArguments[0];
+        if (comparerArgument.Value is not INamedTypeSymbol typeSymbol)
+            return (ComparerTypes.Default, null, null); // invalid syntax found
 
-        // generic attribute
-        var attributeClass = attribute.AttributeClass;
-        if (attributeClass is { IsGenericType: true }
-            && attributeClass.TypeArguments.Length == attributeClass.TypeParameters.Length
-            && attributeClass.TypeArguments.Length == 1)
-        {
-            var typeArgument = attributeClass.TypeArguments[0];
-            var comparerName = typeArgument.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var comparerName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
-            return (ComparerTypes.Custom, comparerName, null);
-        }
+        var instanceArgument = attribute.ConstructorArguments[1];
+        var comparerInstance = instanceArgument.Value as string;
 
-
-        return (ComparerTypes.Default, null, null);
+        return (ComparerTypes.Custom, comparerName, comparerInstance);
     }
 
 
