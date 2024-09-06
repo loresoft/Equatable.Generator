@@ -37,7 +37,7 @@ public class SequenceEqualityComparer<TValue> : IEqualityComparer<IEnumerable<TV
         if (ReferenceEquals(x, y))
             return true;
 
-        if (x == null || y == null)
+        if (x is null || y is null)
             return false;
 
         return x.SequenceEqual(y, Comparer);
