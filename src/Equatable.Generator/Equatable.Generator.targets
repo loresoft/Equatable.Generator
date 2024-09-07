@@ -1,8 +1,0 @@
-<Project>
-  <ItemGroup>
-    <PackageReference Update="Equatable.Generator">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>all</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
-</Project>

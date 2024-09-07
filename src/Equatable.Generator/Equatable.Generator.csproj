@@ -3,13 +3,10 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
     <RootNamespace>Equatable</RootNamespace>
-
-    <DevelopmentDependency>true</DevelopmentDependency>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="..\Equatable.SourceGenerator\bin\$(Configuration)\netstandard2.0\Equatable.SourceGenerator.dll" PackagePath="analyzers\dotnet\roslyn4.4\cs" Pack="true" Visible="false" />
-    <None Include="$(AssemblyName).targets" PackagePath="build" Pack="true" Visible="true" />
   </ItemGroup>
 
 </Project>
