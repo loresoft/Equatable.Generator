@@ -1,0 +1,5 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Update="Equatable.Generator" PrivateAssets="all" PackTransitive="false" />
+  </ItemGroup>
+</Project>
