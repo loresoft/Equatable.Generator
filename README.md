@@ -41,7 +41,7 @@ This library requires:
 
 ### Equatable Attributes
 
-Place equatable attribute on a `class`, `record` or `struct`.  The source generator will create a partial with overrides for `Equals` and `GetHashCode`.
+Place `[Equatable]` attribute on a `class`, `record` or `struct`.  The source generator will create a partial with overrides for `Equals` and `GetHashCode` for all public properties.
 
 - `[Equatable]` Marks the class to generate overrides for `Equals` and `GetHashCode`
 
