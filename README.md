@@ -1,6 +1,6 @@
 # Equatable.Generator
 
-Source generator for `Equals` and `GetHashCode`
+Source generator for `Equals` and `GetHashCode` with attribute based control of equality implementation
 
 [![Build Project](https://github.com/loresoft/Equatable.Generator/actions/workflows/dotnet.yml/badge.svg)](https://github.com/loresoft/Equatable.Generator/actions/workflows/dotnet.yml)
 
@@ -13,9 +13,10 @@ Source generator for `Equals` and `GetHashCode`
 - Override `Equals` and `GetHashCode`
 - Implement `IEquatable<T>`
 - Support `class`, `record` and `struct` types
-- Support `EqualityComparer` per property
-- Comparers supported: String, Sequence, Dictionary, HashSet, Reference, and Custom
-- No dependencies
+- Support `EqualityComparer` per property via attribute
+- Attribute based control of equality implementation. 
+- Attribute comparers supported: String, Sequence, Dictionary, HashSet, Reference, and Custom
+- No runtime dependencies.  Library is compile time dependence only.  
 
 ### Usage
 
