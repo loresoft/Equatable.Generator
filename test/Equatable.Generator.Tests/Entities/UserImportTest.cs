@@ -48,7 +48,7 @@ public class UserImportTest
         };
 
         var isEqual = left.Equals(right);
-        isEqual.Should().BeTrue();
+        Assert.True(isEqual);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class UserImportTest
         };
 
         var isEqual = left.Equals(right);
-        isEqual.Should().BeFalse();
+        Assert.False(isEqual);
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public class UserImportTest
         };
 
         var isEqual = left.Equals(right);
-        isEqual.Should().BeFalse();
+        Assert.False(isEqual);
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public class UserImportTest
         };
 
         var isEqual = left.Equals(right);
-        isEqual.Should().BeFalse();
+        Assert.False(isEqual);
     }
 
 
@@ -223,7 +223,7 @@ public class UserImportTest
 
         var leftCode = left.GetHashCode();
         var rightCode = right.GetHashCode();
-        leftCode.Should().Be(rightCode);
+        Assert.Equal(rightCode, leftCode);
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class UserImportTest
 
         var leftCode = left.GetHashCode();
         var rightCode = right.GetHashCode();
-        leftCode.Should().NotBe(rightCode);
+        Assert.NotEqual(rightCode, leftCode);
     }
 
     [Fact]
@@ -311,7 +311,7 @@ public class UserImportTest
 
         var leftCode = left.GetHashCode();
         var rightCode = right.GetHashCode();
-        leftCode.Should().NotBe(rightCode);
+        Assert.NotEqual(rightCode, leftCode);
     }
 
     [Fact]
@@ -356,6 +356,6 @@ public class UserImportTest
 
         var leftCode = left.GetHashCode();
         var rightCode = right.GetHashCode();
-        leftCode.Should().NotBe(rightCode);
+        Assert.NotEqual(rightCode, leftCode);
     }
 }

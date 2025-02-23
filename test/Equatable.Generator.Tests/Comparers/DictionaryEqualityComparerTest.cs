@@ -20,7 +20,7 @@ public class DictionaryEqualityComparerTest
         };
 
         var comparer = DictionaryEqualityComparer<string, int>.Default;
-        comparer.Equals(a, b).Should().BeTrue();
+        Assert.True(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public class DictionaryEqualityComparerTest
         };
 
         var comparer = DictionaryEqualityComparer<string, int>.Default;
-        comparer.Equals(a, b).Should().BeFalse();
+        Assert.False(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class DictionaryEqualityComparerTest
         };
 
         var comparer = DictionaryEqualityComparer<string, int>.Default;
-        comparer.Equals(a, b).Should().BeFalse();
+        Assert.False(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public class DictionaryEqualityComparerTest
         };
 
         var comparer = DictionaryEqualityComparer<string, int?>.Default;
-        comparer.Equals(a, b).Should().BeFalse();
+        Assert.False(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public class DictionaryEqualityComparerTest
         };
 
         var comparer = DictionaryEqualityComparer<string, int?>.Default;
-        comparer.Equals(a, b).Should().BeTrue();
+        Assert.True(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class DictionaryEqualityComparerTest
         var b = new Dictionary<string, int>();
 
         var comparer = DictionaryEqualityComparer<string, int>.Default;
-        comparer.Equals(a, b).Should().BeFalse();
+        Assert.False(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public class DictionaryEqualityComparerTest
         };
 
         var comparer = DictionaryEqualityComparer<string, int>.Default;
-        comparer.Equals(a, null).Should().BeFalse();
+        Assert.False(comparer.Equals(a, null));
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class DictionaryEqualityComparerTest
         var aHash = comparer.GetHashCode(a);
         var bHash = comparer.GetHashCode(b);
 
-        aHash.Should().Be(bHash);
+        Assert.Equal(bHash, aHash);
     }
 
     [Fact]
@@ -168,6 +168,6 @@ public class DictionaryEqualityComparerTest
         var aHash = comparer.GetHashCode(a);
         var bHash = comparer.GetHashCode(b);
 
-        aHash.Should().Be(bHash);
+        Assert.Equal(bHash, aHash);
     }
 }

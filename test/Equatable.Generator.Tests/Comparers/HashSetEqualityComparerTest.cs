@@ -12,7 +12,7 @@ public class HashSetEqualityComparerTest
         var b = new HashSet<int>([10, 5]);
 
         var comparer = HashSetEqualityComparer<int>.Default;
-        comparer.Equals(a, b).Should().BeTrue();
+        Assert.True(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -23,7 +23,7 @@ public class HashSetEqualityComparerTest
         var b = new HashSet<int>([5, 10]);
 
         var comparer = HashSetEqualityComparer<int>.Default;
-        comparer.Equals(a, b).Should().BeTrue();
+        Assert.True(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public class HashSetEqualityComparerTest
         var b = new HashSet<int>([-10, 5]);
 
         var comparer = HashSetEqualityComparer<int>.Default;
-        comparer.Equals(a, b).Should().BeFalse();
+        Assert.False(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class HashSetEqualityComparerTest
         var b = new HashSet<int?>([10, null]);
 
         var comparer = HashSetEqualityComparer<int?>.Default;
-        comparer.Equals(a, b).Should().BeFalse();
+        Assert.False(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public class HashSetEqualityComparerTest
 
 
         var comparer = HashSetEqualityComparer<int?>.Default;
-        comparer.Equals(a, b).Should().BeTrue();
+        Assert.True(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class HashSetEqualityComparerTest
         var b = new HashSet<int>();
 
         var comparer = HashSetEqualityComparer<int>.Default;
-        comparer.Equals(a, b).Should().BeFalse();
+        Assert.False(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public class HashSetEqualityComparerTest
         var a = new HashSet<int>([10, 5]);
 
         var comparer = HashSetEqualityComparer<int>.Default;
-        comparer.Equals(a, null).Should().BeFalse();
+        Assert.False(comparer.Equals(a, null));
     }
 
     [Fact]
@@ -91,6 +91,6 @@ public class HashSetEqualityComparerTest
         var aHash = comparer.GetHashCode(a);
         var bHash = comparer.GetHashCode(b);
 
-        aHash.Should().Be(bHash);
+        Assert.Equal(bHash, aHash);
     }
 }

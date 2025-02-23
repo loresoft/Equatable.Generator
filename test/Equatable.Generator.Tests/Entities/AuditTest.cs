@@ -28,11 +28,11 @@ public class AuditTest
         };
 
         var isEqual = left.Equals(right);
-        isEqual.Should().BeTrue();
+        Assert.True(isEqual);
 
         // check operator ==
         isEqual = left == right;
-        isEqual.Should().BeTrue();
+        Assert.True(isEqual);
     }
 
     [Fact]
@@ -57,11 +57,11 @@ public class AuditTest
         };
 
         var isEqual = left.Equals(right);
-        isEqual.Should().BeFalse();
+        Assert.False(isEqual);
 
         // check operator !=
         isEqual = left != right;
-        isEqual.Should().BeTrue();
+        Assert.True(isEqual);
 
     }
 
@@ -90,7 +90,7 @@ public class AuditTest
         var leftCode = left.GetHashCode();
         var rightCode = right.GetHashCode();
 
-        leftCode.Should().Be(rightCode);
+        Assert.Equal(rightCode, leftCode);
     }
 
     [Fact]
@@ -117,6 +117,6 @@ public class AuditTest
         var leftCode = left.GetHashCode();
         var rightCode = right.GetHashCode();
 
-        leftCode.Should().NotBe(rightCode);
+        Assert.NotEqual(rightCode, leftCode);
     }
 }

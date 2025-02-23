@@ -54,7 +54,7 @@ public partial class UserImport
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         return Verifier
             .Verify(output)
@@ -95,7 +95,7 @@ public partial class Priority : ModelBase
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         return Verifier
             .Verify(output)
@@ -173,7 +173,7 @@ public partial class Priority : ModelBase
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         return Verifier
             .Verify(output)
@@ -207,7 +207,7 @@ public sealed partial record StatusRecord(
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         return Verifier
             .Verify(output)
@@ -238,7 +238,7 @@ public partial record StatusRecordList(
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         return Verifier
             .Verify(output)
@@ -277,7 +277,7 @@ public readonly partial struct StatusReadOnly
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         return Verifier
             .Verify(output)
@@ -317,7 +317,7 @@ public class LengthEqualityComparer : IEqualityComparer<string?>
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         return Verifier
             .Verify(output)
@@ -351,7 +351,7 @@ public partial class Audit
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         return Verifier
             .Verify(output)
@@ -381,7 +381,7 @@ public partial class Nested
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         return Verifier
             .Verify(output)
@@ -421,8 +421,8 @@ public partial class UserImport
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().NotBeEmpty();
-        diagnostics[0].Id.Should().Be("EQ0010");
+        Assert.NotEmpty(diagnostics);
+        Assert.Equal("EQ0010", diagnostics[0].Id);
 
         return Task.CompletedTask;
     }
@@ -459,8 +459,8 @@ public partial class UserImport
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().NotBeEmpty();
-        diagnostics[0].Id.Should().Be("EQ0013");
+        Assert.NotEmpty(diagnostics);
+        Assert.Equal("EQ0013", diagnostics[0].Id);
 
         return Task.CompletedTask;
     }
@@ -497,8 +497,8 @@ public partial class UserImport
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().NotBeEmpty();
-        diagnostics[0].Id.Should().Be("EQ0012");
+        Assert.NotEmpty(diagnostics);
+        Assert.Equal("EQ0012", diagnostics[0].Id);
 
         return Task.CompletedTask;
     }
@@ -535,8 +535,8 @@ public partial class UserImport
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        diagnostics.Should().NotBeEmpty();
-        diagnostics[0].Id.Should().Be("EQ0011");
+        Assert.NotEmpty(diagnostics);
+        Assert.Equal("EQ0011", diagnostics[0].Id);
 
         return Task.CompletedTask;
     }

@@ -56,11 +56,11 @@ public class TaskTest
         };
 
         var isEqual = left.Equals(right);
-        isEqual.Should().BeTrue();
+        Assert.True(isEqual);
 
         // check operator ==
         isEqual = left == right;
-        isEqual.Should().BeTrue();
+        Assert.True(isEqual);
     }
 
     [Fact]
@@ -115,11 +115,11 @@ public class TaskTest
         };
 
         var isEqual = left.Equals(right);
-        isEqual.Should().BeFalse();
+        Assert.False(isEqual);
 
         // check operator !=
         isEqual = left != right;
-        isEqual.Should().BeTrue();
+        Assert.True(isEqual);
     }
 
 }

@@ -12,7 +12,7 @@ public class SequenceEqualityComparerTest
         var b = new List<int>([10, 5]);
 
         var comparer = SequenceEqualityComparer<int>.Default;
-        comparer.Equals(a, b).Should().BeTrue();
+        Assert.True(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -23,7 +23,7 @@ public class SequenceEqualityComparerTest
         var b = new List<int>([-10, 5]);
 
         var comparer = SequenceEqualityComparer<int>.Default;
-        comparer.Equals(a, b).Should().BeFalse();
+        Assert.False(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public class SequenceEqualityComparerTest
         var b = new List<int?>([10, null]);
 
         var comparer = SequenceEqualityComparer<int?>.Default;
-        comparer.Equals(a, b).Should().BeFalse();
+        Assert.False(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class SequenceEqualityComparerTest
 
 
         var comparer = SequenceEqualityComparer<int?>.Default;
-        comparer.Equals(a, b).Should().BeTrue();
+        Assert.True(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public class SequenceEqualityComparerTest
         var b = new List<int>();
 
         var comparer = SequenceEqualityComparer<int>.Default;
-        comparer.Equals(a, b).Should().BeFalse();
+        Assert.False(comparer.Equals(a, b));
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class SequenceEqualityComparerTest
         var a = new List<int>([10, 5]);
 
         var comparer = SequenceEqualityComparer<int>.Default;
-        comparer.Equals(a, null).Should().BeFalse();
+        Assert.False(comparer.Equals(a, null));
     }
 
     [Fact]
@@ -80,6 +80,6 @@ public class SequenceEqualityComparerTest
         var aHash = comparer.GetHashCode(a);
         var bHash = comparer.GetHashCode(b);
 
-        aHash.Should().Be(bHash);
+        Assert.Equal(bHash, aHash);
     }
 }
