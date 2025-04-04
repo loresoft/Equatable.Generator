@@ -10,7 +10,7 @@ namespace Equatable.Entities
         {
             return !(other is null)
                 && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(Id, other.Id)
-                && global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.Equals(Name, other.Name)
+                && global::System.StringComparer.OrdinalIgnoreCase.Equals(Name, other.Name)
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Description, other.Description)
                 && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(DisplayOrder, other.DisplayOrder)
                 && global::System.Collections.Generic.EqualityComparer<global::System.Boolean>.Default.Equals(IsActive, other.IsActive)
@@ -33,7 +33,7 @@ namespace Equatable.Entities
         public override int GetHashCode(){
             int hashCode = 1051616673;
             hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(Id!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.GetHashCode(Name!);
+            hashCode = (hashCode * -1521134295) + global::System.StringComparer.OrdinalIgnoreCase.GetHashCode(Name!);
             hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Description!);
             hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(DisplayOrder!);
             hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Boolean>.Default.GetHashCode(IsActive!);

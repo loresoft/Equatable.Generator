@@ -89,3 +89,17 @@ public partial class UserImport
     public List<DateTimeOffset>? History { get; set; }
 }
 ```
+
+Works for `record` types too
+
+```c#
+[Equatable]
+public partial record StatusRecord(
+    int Id,
+    [property: StringEquality(StringComparison.OrdinalIgnoreCase)] string Name,
+    string? Description,
+    int DisplayOrder,
+    bool IsActive,
+    [property: SequenceEquality] List<string> Versions
+);
+```

@@ -12,6 +12,8 @@ namespace Equatable.SourceGenerator;
 [Generator]
 public class EquatableGenerator : IIncrementalGenerator
 {
+    private static SymbolDisplayFormat FullyQualifiedNullableFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var provider = context.SyntaxProvider.ForAttributeWithMetadataName(
@@ -152,8 +154,7 @@ public class EquatableGenerator : IIncrementalGenerator
 
     private static EquatableProperty CreateProperty(List<Diagnostic> diagnostics, IPropertySymbol propertySymbol)
     {
-        var format = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
-        var propertyType = propertySymbol.Type.ToDisplayString(format);
+        var propertyType = propertySymbol.Type.ToDisplayString(FullyQualifiedNullableFormat);
         var propertyName = propertySymbol.Name;
 
         // look for custom equality
