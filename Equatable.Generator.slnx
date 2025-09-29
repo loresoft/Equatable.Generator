@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Build/">
+    <File Path=".github/dependabot.yml" />
+    <File Path=".github/workflows/dotnet.yml" />
+    <File Path="Directory.Packages.props" />
+    <File Path="README.md" />
+    <File Path="src/Directory.Build.props" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="test/Equatable.Entities/Equatable.Entities.csproj" />
+    <Project Path="test/Equatable.Generator.Tests/Equatable.Generator.Tests.csproj" />
+  </Folder>
+  <Project Path="src/Equatable.Comparers/Equatable.Comparers.csproj" />
+  <Project Path="src/Equatable.Generator/Equatable.Generator.csproj" />
+  <Project Path="src/Equatable.SourceGenerator/Equatable.SourceGenerator.csproj" />
+</Solution>
