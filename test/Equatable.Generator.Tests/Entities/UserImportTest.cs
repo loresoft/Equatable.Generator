@@ -1,8 +1,4 @@
-using System;
-
 using Equatable.Entities;
-
-using Xunit;
 
 namespace Equatable.Generator.Tests.Entities;
 

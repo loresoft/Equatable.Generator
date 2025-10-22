@@ -11,7 +11,7 @@ namespace Equatable.Entities
             public bool Equals(global::Equatable.Entities.Nested.Animal? other)
             {
                 return !(other is null)
-                    && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(Id, other.Id)
+                    && Id == other.Id
                     && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Name, other.Name)
                     && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Type, other.Type);
 
@@ -38,7 +38,7 @@ namespace Equatable.Entities
             /// <inheritdoc />
             public override int GetHashCode(){
                 int hashCode = -678952093;
-                hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(Id!);
+                hashCode = (hashCode * -1521134295) + Id.GetHashCode();
                 hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Name!);
                 hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Type!);
                 return hashCode;

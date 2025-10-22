@@ -9,11 +9,11 @@ namespace Equatable.Entities
         public virtual bool Equals(global::Equatable.Entities.StatusRecordList? other)
         {
             return !(other is null)
-                && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(Id, other.Id)
+                && Id == other.Id
                 && global::System.StringComparer.OrdinalIgnoreCase.Equals(Name, other.Name)
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Description, other.Description)
-                && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(DisplayOrder, other.DisplayOrder)
-                && global::System.Collections.Generic.EqualityComparer<global::System.Boolean>.Default.Equals(IsActive, other.IsActive)
+                && DisplayOrder == other.DisplayOrder
+                && IsActive == other.IsActive
                 && SequenceEquals(Versions, other.Versions);
 
             static bool SequenceEquals<T>(global::System.Collections.Generic.IEnumerable<T>? left, global::System.Collections.Generic.IEnumerable<T>? right)
@@ -32,11 +32,11 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override int GetHashCode(){
             int hashCode = 1051616673;
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(Id!);
+            hashCode = (hashCode * -1521134295) + Id.GetHashCode();
             hashCode = (hashCode * -1521134295) + global::System.StringComparer.OrdinalIgnoreCase.GetHashCode(Name!);
             hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Description!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(DisplayOrder!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Boolean>.Default.GetHashCode(IsActive!);
+            hashCode = (hashCode * -1521134295) + DisplayOrder.GetHashCode();
+            hashCode = (hashCode * -1521134295) + IsActive.GetHashCode();
             hashCode = (hashCode * -1521134295) + SequenceHashCode(Versions);
             return hashCode;
 

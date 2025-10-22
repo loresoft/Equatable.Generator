@@ -8,11 +8,11 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public bool Equals(global::Equatable.Entities.StatusReadOnly other)
         {
-            return global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(Id, other.Id)
+            return Id == other.Id
                 && global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.Equals(Name, other.Name)
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Description, other.Description)
-                && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(DisplayOrder, other.DisplayOrder)
-                && global::System.Collections.Generic.EqualityComparer<global::System.Boolean>.Default.Equals(IsActive, other.IsActive);
+                && DisplayOrder == other.DisplayOrder
+                && IsActive == other.IsActive;
 
         }
 
@@ -37,11 +37,11 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override int GetHashCode(){
             int hashCode = -637655923;
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(Id!);
+            hashCode = (hashCode * -1521134295) + Id.GetHashCode();
             hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.GetHashCode(Name!);
             hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Description!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(DisplayOrder!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Boolean>.Default.GetHashCode(IsActive!);
+            hashCode = (hashCode * -1521134295) + DisplayOrder.GetHashCode();
+            hashCode = (hashCode * -1521134295) + IsActive.GetHashCode();
             return hashCode;
 
         }

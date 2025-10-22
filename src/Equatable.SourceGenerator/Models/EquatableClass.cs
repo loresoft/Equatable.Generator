@@ -4,6 +4,7 @@ public record EquatableClass(
     string FullyQualified,
     string EntityNamespace,
     string EntityName,
+    string FileName,
     EquatableArray<ContainingClass> ContainingTypes,
     EquatableArray<EquatableProperty> Properties,
     bool IsRecord,

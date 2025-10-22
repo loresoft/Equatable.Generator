@@ -1,6 +1,3 @@
-using System.Reflection;
-using System.Xml.Linq;
-
 using Equatable.SourceGenerator.Models;
 
 using Microsoft.CodeAnalysis;
@@ -12,53 +9,36 @@ namespace Equatable.SourceGenerator;
 [Generator]
 public class EquatableGenerator : IIncrementalGenerator
 {
-    private static SymbolDisplayFormat FullyQualifiedNullableFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+    private static readonly SymbolDisplayFormat FullyQualifiedNullableFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+    private static readonly SymbolDisplayFormat NameAndNamespaces = new(SymbolDisplayGlobalNamespaceStyle.Omitted, SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces, SymbolDisplayGenericsOptions.None);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var provider = context.SyntaxProvider.ForAttributeWithMetadataName(
-            fullyQualifiedMetadataName: "Equatable.Attributes.EquatableAttribute",
-            predicate: SyntacticPredicate,
-            transform: SemanticTransform
-        )
-        .Where(static context => context is not null);
-
-        // Emit the diagnostics, if needed
-        var diagnostics = provider
-            .Select(static (item, _) => item?.Diagnostics)
-            .Where(static item => item?.Count > 0);
-
-        context.RegisterSourceOutput(diagnostics, ReportDiagnostic);
+        var provider = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                fullyQualifiedMetadataName: "Equatable.Attributes.EquatableAttribute",
+                predicate: SyntacticPredicate,
+                transform: SemanticTransform
+            )
+            .Where(static context => context is not null)
+            .WithTrackingName("EquatableAttribute");
 
         // output code
         var entityClasses = provider
-            .Select(static (item, _) => item?.EntityClass)
             .Where(static item => item is not null);
 
         context.RegisterSourceOutput(entityClasses, Execute);
     }
 
-    private static void ReportDiagnostic(SourceProductionContext context, EquatableArray<Diagnostic>? diagnostics)
-    {
-        if (diagnostics == null)
-            return;
-
-        foreach (var diagnostic in diagnostics)
-            context.ReportDiagnostic(diagnostic);
-    }
 
     private static void Execute(SourceProductionContext context, EquatableClass? entityClass)
     {
         if (entityClass == null)
             return;
 
-        var qualifiedName = entityClass.EntityNamespace is null
-            ? entityClass.EntityName
-            : $"{entityClass.EntityNamespace}.{entityClass.EntityName}";
-
         var source = EquatableWriter.Generate(entityClass);
 
-        context.AddSource($"{qualifiedName}.Equatable.g.cs", source);
+        context.AddSource(entityClass.FileName, source);
     }
 
 
@@ -69,16 +49,16 @@ public class EquatableGenerator : IIncrementalGenerator
             || (syntaxNode is StructDeclarationSyntax structDeclaration && !structDeclaration.Modifiers.Any(SyntaxKind.StaticKeyword));
     }
 
-    private static EquatableContext? SemanticTransform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
+    private static EquatableClass? SemanticTransform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
     {
         if (context.TargetSymbol is not INamedTypeSymbol targetSymbol)
             return null;
 
-        var diagnostics = new List<Diagnostic>();
-
-        var fullyQualified = targetSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var fullyQualified = targetSymbol.ToDisplayString(FullyQualifiedNullableFormat);
         var classNamespace = targetSymbol.ContainingNamespace.ToDisplayString();
-        var className = targetSymbol.Name;
+        var className = targetSymbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+        var qualifiedName = targetSymbol.ToDisplayString(NameAndNamespaces);
+        var fileName = $"{qualifiedName}.Equatable.g.cs";
 
         // support nested types
         var containingTypes = GetContainingTypes(targetSymbol);
@@ -90,7 +70,7 @@ public class EquatableGenerator : IIncrementalGenerator
         var propertySymbols = GetProperties(targetSymbol, baseHashCode == null && baseEquatable == null);
 
         var propertyArray = propertySymbols
-            .Select(symbol => CreateProperty(diagnostics, symbol))
+            .Select(CreateProperty)
             .ToArray() ?? [];
 
         // the seed value of the hash code method
@@ -106,10 +86,11 @@ public class EquatableGenerator : IIncrementalGenerator
         foreach (var property in propertyArray)
             seedHash = (seedHash * HashFactor) + GetFNVHashCode(property.PropertyName);
 
-        var entity = new EquatableClass(
+        return new EquatableClass(
             FullyQualified: fullyQualified,
             EntityNamespace: classNamespace,
             EntityName: className,
+            FileName: fileName,
             ContainingTypes: containingTypes,
             Properties: propertyArray,
             IsRecord: targetSymbol.IsRecord,
@@ -119,8 +100,6 @@ public class EquatableGenerator : IIncrementalGenerator
             IncludeBaseHashMethod: baseHashCode != null || baseEquatable != null,
             SeedHash: seedHash
         );
-
-        return new EquatableContext(entity, diagnostics.ToArray());
     }
 
 
@@ -152,10 +131,12 @@ public class EquatableGenerator : IIncrementalGenerator
         return properties.Values;
     }
 
-    private static EquatableProperty CreateProperty(List<Diagnostic> diagnostics, IPropertySymbol propertySymbol)
+    private static EquatableProperty CreateProperty(IPropertySymbol propertySymbol)
     {
         var propertyType = propertySymbol.Type.ToDisplayString(FullyQualifiedNullableFormat);
         var propertyName = propertySymbol.Name;
+        var isValueType = propertySymbol.Type.IsValueType;
+        var defaultComparer = isValueType ? ComparerTypes.ValueType : ComparerTypes.Default;
 
         // look for custom equality
         var attributes = propertySymbol.GetAttributes();
@@ -164,7 +145,7 @@ public class EquatableGenerator : IIncrementalGenerator
             return new EquatableProperty(
                 propertyName,
                 propertyType,
-                ComparerTypes.Default);
+                defaultComparer);
         }
 
         // search for known attribute
@@ -175,15 +156,13 @@ public class EquatableGenerator : IIncrementalGenerator
             if (!comparerType.HasValue)
                 continue;
 
-            var diagnostic = ValidateComparer(propertySymbol, comparerType);
-            if (diagnostic != null)
+            var isValid = ValidateComparer(propertySymbol, comparerType);
+            if (!isValid)
             {
-                diagnostics.Add(diagnostic);
-
                 return new EquatableProperty(
                     propertyName,
                     propertyType,
-                    ComparerTypes.Default);
+                    defaultComparer);
             }
 
             return new EquatableProperty(
@@ -197,64 +176,28 @@ public class EquatableGenerator : IIncrementalGenerator
         return new EquatableProperty(
             propertyName,
             propertyType,
-            ComparerTypes.Default);
+            defaultComparer);
     }
 
-    private static Diagnostic? ValidateComparer(IPropertySymbol propertySymbol, ComparerTypes? comparerType)
+    private static bool ValidateComparer(IPropertySymbol propertySymbol, ComparerTypes? comparerType)
     {
         // don't need to validate these types
         if (comparerType is null or ComparerTypes.Default or ComparerTypes.Reference or ComparerTypes.Custom)
-            return null;
+            return true;
 
         if (comparerType == ComparerTypes.String)
-        {
-            if (IsString(propertySymbol.Type))
-                return null;
-
-            return Diagnostic.Create(
-                DiagnosticDescriptors.InvalidStringEqualityAttributeUsage,
-                propertySymbol.Locations.FirstOrDefault(),
-                propertySymbol.Name
-            );
-        }
+            return IsString(propertySymbol.Type);
 
         if (comparerType == ComparerTypes.Dictionary)
-        {
-            if (propertySymbol.Type.AllInterfaces.Any(IsDictionary))
-                return null;
-
-            return Diagnostic.Create(
-                DiagnosticDescriptors.InvalidDictionaryEqualityAttributeUsage,
-                propertySymbol.Locations.FirstOrDefault(),
-                propertySymbol.Name
-            );
-        }
+            return propertySymbol.Type.AllInterfaces.Any(IsDictionary);
 
         if (comparerType == ComparerTypes.HashSet)
-        {
-            if (propertySymbol.Type.AllInterfaces.Any(IsEnumerable))
-                return null;
-
-            return Diagnostic.Create(
-                DiagnosticDescriptors.InvalidHashSetEqualityAttributeUsage,
-                propertySymbol.Locations.FirstOrDefault(),
-                propertySymbol.Name
-            );
-        }
+            return propertySymbol.Type.AllInterfaces.Any(IsEnumerable);
 
         if (comparerType == ComparerTypes.Sequence)
-        {
-            if (propertySymbol.Type.AllInterfaces.Any(IsEnumerable))
-                return null;
+            return propertySymbol.Type.AllInterfaces.Any(IsEnumerable);
 
-            return Diagnostic.Create(
-                DiagnosticDescriptors.InvalidSequenceEqualityAttributeUsage,
-                propertySymbol.Locations.FirstOrDefault(),
-                propertySymbol.Name
-            );
-        }
-
-        return null;
+        return true;
     }
 
 

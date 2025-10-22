@@ -1,5 +1,3 @@
-using System;
-
 using Equatable.Attributes;
 
 namespace Equatable.Entities;

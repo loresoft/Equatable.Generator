@@ -389,7 +389,6 @@ public partial class Nested
             .ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
-
     [Fact]
     public Task GenerateInvalidStringEquality()
     {
@@ -421,10 +420,10 @@ public partial class UserImport
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        Assert.NotEmpty(diagnostics);
-        Assert.Equal("EQ0010", diagnostics[0].Id);
-
-        return Task.CompletedTask;
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
     [Fact]
@@ -459,10 +458,10 @@ public partial class UserImport
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        Assert.NotEmpty(diagnostics);
-        Assert.Equal("EQ0013", diagnostics[0].Id);
-
-        return Task.CompletedTask;
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
     [Fact]
@@ -497,10 +496,10 @@ public partial class UserImport
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        Assert.NotEmpty(diagnostics);
-        Assert.Equal("EQ0012", diagnostics[0].Id);
-
-        return Task.CompletedTask;
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
     [Fact]
@@ -535,10 +534,10 @@ public partial class UserImport
 
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
 
-        Assert.NotEmpty(diagnostics);
-        Assert.Equal("EQ0011", diagnostics[0].Id);
-
-        return Task.CompletedTask;
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
     private static (ImmutableArray<Diagnostic> Diagnostics, string Output) GetGeneratedOutput<T>(string source)

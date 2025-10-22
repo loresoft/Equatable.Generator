@@ -12,6 +12,7 @@ public class EquatableWriterTest
             FullyQualified: "global::Equatable.Entities.User",
             EntityNamespace: "Equatable.Entities",
             EntityName: "User",
+            FileName: "Equatable.Entities.User.Equatable.g.cs",
             ContainingTypes: Array.Empty<ContainingClass>(),
             Properties: new EquatableArray<EquatableProperty>([
                 new EquatableProperty("Id", "int"),
@@ -43,6 +44,7 @@ public class EquatableWriterTest
             FullyQualified: "global::Equatable.Entities.User",
             EntityNamespace: "Equatable.Entities",
             EntityName: "User",
+            FileName: "Equatable.Entities.User.Equatable.g.cs",
             ContainingTypes: Array.Empty<ContainingClass>(),
             Properties: new EquatableArray<EquatableProperty>([
                 new EquatableProperty("Id", "int"),
@@ -75,6 +77,7 @@ public class EquatableWriterTest
             FullyQualified: "global::Equatable.Entities.UserImport",
             EntityNamespace: "Equatable.Entities",
             EntityName: "UserImport",
+            FileName: "Equatable.Entities.UserImport.Equatable.g.cs",
             ContainingTypes: Array.Empty<ContainingClass>(),
             Properties: new EquatableArray<EquatableProperty>([
                 new EquatableProperty("EmailAddress", "string", ComparerTypes.String, "OrdinalIgnoreCase"),

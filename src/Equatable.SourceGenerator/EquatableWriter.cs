@@ -188,6 +188,14 @@ public static class EquatableWriter
                         .Append(")");
 
                     break;
+                case ComparerTypes.ValueType:
+                    codeBuilder
+                        .Append(" ")
+                        .Append(entityProperty.PropertyName)
+                        .Append(" == other.")
+                        .Append(entityProperty.PropertyName);
+
+                    break;
                 default:
                     codeBuilder
                         .Append(" global::System.Collections.Generic.EqualityComparer<")
@@ -456,6 +464,12 @@ public static class EquatableWriter
                         .Append(".GetHashCode(")
                         .Append(entityProperty.PropertyName)
                         .AppendLine("!);");
+                    break;
+                case ComparerTypes.ValueType:
+                    codeBuilder
+                        .Append("hashCode = (hashCode * -1521134295) + ")
+                        .Append(entityProperty.PropertyName)
+                        .AppendLine(".GetHashCode();");
                     break;
                 default:
                     codeBuilder

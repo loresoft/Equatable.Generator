@@ -9,10 +9,10 @@ namespace Equatable.Entities
         public bool Equals(global::Equatable.Entities.Audit? other)
         {
             return !(other is null)
-                && global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.Equals(Id, other.Id)
-                && global::System.Collections.Generic.EqualityComparer<global::System.DateTime>.Default.Equals(Date, other.Date)
-                && global::System.Collections.Generic.EqualityComparer<global::System.Int32?>.Default.Equals(UserId, other.UserId)
-                && global::System.Collections.Generic.EqualityComparer<global::System.Int32?>.Default.Equals(TaskId, other.TaskId)
+                && Id == other.Id
+                && Date == other.Date
+                && UserId == other.UserId
+                && TaskId == other.TaskId
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Content, other.Content)
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(UserName, other.UserName)
                 && global::System.Object.ReferenceEquals(Lock, other.Lock);
@@ -40,10 +40,10 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override int GetHashCode(){
             int hashCode = 374357566;
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32>.Default.GetHashCode(Id!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.DateTime>.Default.GetHashCode(Date!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32?>.Default.GetHashCode(UserId!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.Int32?>.Default.GetHashCode(TaskId!);
+            hashCode = (hashCode * -1521134295) + Id.GetHashCode();
+            hashCode = (hashCode * -1521134295) + Date.GetHashCode();
+            hashCode = (hashCode * -1521134295) + UserId.GetHashCode();
+            hashCode = (hashCode * -1521134295) + TaskId.GetHashCode();
             hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Content!);
             hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(UserName!);
             hashCode = (hashCode * -1521134295) + global::System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Lock!);

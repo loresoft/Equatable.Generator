@@ -13,8 +13,8 @@ namespace Equatable.Entities
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(DisplayName, other.DisplayName)
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(FirstName, other.FirstName)
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(LastName, other.LastName)
-                && global::System.Collections.Generic.EqualityComparer<global::System.DateTimeOffset?>.Default.Equals(LockoutEnd, other.LockoutEnd)
-                && global::System.Collections.Generic.EqualityComparer<global::System.DateTimeOffset?>.Default.Equals(LastLogin, other.LastLogin)
+                && LockoutEnd == other.LockoutEnd
+                && LastLogin == other.LastLogin
                 && HashSetEquals(Roles, other.Roles)
                 && DictionaryEquals(Permissions, other.Permissions)
                 && SequenceEquals(History, other.History);
@@ -99,8 +99,8 @@ namespace Equatable.Entities
             hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(DisplayName!);
             hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(FirstName!);
             hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(LastName!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.DateTimeOffset?>.Default.GetHashCode(LockoutEnd!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.DateTimeOffset?>.Default.GetHashCode(LastLogin!);
+            hashCode = (hashCode * -1521134295) + LockoutEnd.GetHashCode();
+            hashCode = (hashCode * -1521134295) + LastLogin.GetHashCode();
             hashCode = (hashCode * -1521134295) + HashSetHashCode(Roles);
             hashCode = (hashCode * -1521134295) + DictionaryHashCode(Permissions);
             hashCode = (hashCode * -1521134295) + SequenceHashCode(History);

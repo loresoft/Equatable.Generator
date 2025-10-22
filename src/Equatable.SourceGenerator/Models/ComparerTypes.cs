@@ -8,5 +8,6 @@ public enum ComparerTypes
     Reference,
     Sequence,
     String,
+    ValueType,
     Custom
 }
