@@ -394,6 +394,185 @@ public partial class UserImport
         Assert.Contains(diagnostics, d => d.Id == "EQ0002" && d.GetMessage().Contains("Items"));
     }
 
+    [Fact]
+    public async Task AnalyzeMissingDictionaryAttributeForIDictionary()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    public string EmailAddress { get; set; } = null!;
+
+    public IDictionary<string, int>? Permissions { get; set; }
+}
+";
+
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0001", diagnostic.Id);
+        Assert.Contains("Permissions", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeMissingSequenceAttributeForIEnumerable()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    public string EmailAddress { get; set; } = null!;
+
+    public IEnumerable<string>? Items { get; set; }
+}
+";
+
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0002", diagnostic.Id);
+        Assert.Contains("Items", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeMissingSequenceAttributeForIReadOnlyCollection()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    public string EmailAddress { get; set; } = null!;
+
+    public IReadOnlyCollection<string>? Items { get; set; }
+}
+";
+
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0002", diagnostic.Id);
+        Assert.Contains("Items", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeDictionaryEqualityOnIDictionaryIsValid()
+    {
+        // [DictionaryEquality] on an IDictionary<,>-typed property must NOT emit EQ0011
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    [DictionaryEquality]
+    public IDictionary<string, int>? Permissions { get; set; }
+}
+";
+
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public async Task AnalyzeSequenceEqualityOnIEnumerableIsValid()
+    {
+        // [SequenceEquality] on an IEnumerable<T>-typed property must NOT emit EQ0013
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    [SequenceEquality]
+    public IEnumerable<string>? Items { get; set; }
+}
+";
+
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public async Task AnalyzeBaseTypePropertiesIncludedWhenNoEquatableBase()
+    {
+        // Properties from a non-[Equatable] base class should be analyzed
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+public abstract class ModelBase
+{
+    public List<string>? Tags { get; set; }
+}
+
+[Equatable]
+public partial class Priority : ModelBase
+{
+    public string Name { get; set; } = null!;
+}
+";
+
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0002", diagnostic.Id);
+        Assert.Contains("Tags", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeBaseTypePropertiesExcludedWhenEquatableBase()
+    {
+        // Properties from a [Equatable] base class must NOT cause duplicate diagnostics on the derived type
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public abstract partial class ModelBase
+{
+    [SequenceEquality]
+    public List<string>? Tags { get; set; }
+}
+
+[Equatable]
+public partial class Priority : ModelBase
+{
+    public string Name { get; set; } = null!;
+}
+";
+
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+
+        Assert.Empty(diagnostics);
+    }
+
     private static async Task<ImmutableArray<Diagnostic>> GetAnalyzerDiagnosticsAsync(string source)
     {
         var syntaxTree = CSharpSyntaxTree.ParseText(source);

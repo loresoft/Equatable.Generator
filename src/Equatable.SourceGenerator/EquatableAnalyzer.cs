@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 
 using Microsoft.CodeAnalysis;
@@ -34,15 +35,37 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
         if (!HasEquatableAttribute(typeSymbol))
             return;
 
-        var properties = typeSymbol
-            .GetMembers()
-            .OfType<IPropertySymbol>()
-            .Where(p => !p.IsIndexer
-                && p.DeclaredAccessibility == Accessibility.Public
-                && !IsIgnored(p));
-
-        foreach (var property in properties)
+        foreach (var property in GetAnalyzableProperties(typeSymbol))
             AnalyzeProperty(context, property);
+    }
+
+    private static IEnumerable<IPropertySymbol> GetAnalyzableProperties(INamedTypeSymbol typeSymbol)
+    {
+        // De-duplicate by name (same as the generator's GetProperties) so that
+        // a derived-class property shadows any same-named base-class property.
+        var seenPropertyNames = new HashSet<string>(StringComparer.Ordinal);
+
+        for (var currentSymbol = typeSymbol; currentSymbol != null; currentSymbol = currentSymbol.BaseType)
+        {
+            // Stop at system base types
+            if (IsSystemBaseType(currentSymbol))
+                break;
+
+            // If a base type (not the target itself) has [Equatable], stop: it will be analyzed separately
+            if (!SymbolEqualityComparer.Default.Equals(currentSymbol, typeSymbol) && HasEquatableAttribute(currentSymbol))
+                break;
+
+            foreach (var property in currentSymbol
+                .GetMembers()
+                .OfType<IPropertySymbol>()
+                .Where(p => !p.IsIndexer
+                    && p.DeclaredAccessibility == Accessibility.Public
+                    && !IsIgnored(p)))
+            {
+                if (seenPropertyNames.Add(property.Name))
+                    yield return property;
+            }
+        }
     }
 
     private static void AnalyzeProperty(SymbolAnalysisContext context, IPropertySymbol property)
@@ -70,7 +93,7 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
                     property.Name));
             }
             else if (className == "DictionaryEqualityAttribute"
-                && !property.Type.AllInterfaces.Any(IsDictionary))
+                && !ImplementsDictionary(property.Type))
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     DiagnosticDescriptors.InvalidDictionaryEqualityAttributeUsage,
@@ -78,7 +101,7 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
                     property.Name));
             }
             else if (className == "HashSetEqualityAttribute"
-                && !property.Type.AllInterfaces.Any(IsEnumerable))
+                && !ImplementsEnumerable(property.Type))
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     DiagnosticDescriptors.InvalidHashSetEqualityAttributeUsage,
@@ -86,7 +109,7 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
                     property.Name));
             }
             else if (className == "SequenceEqualityAttribute"
-                && !property.Type.AllInterfaces.Any(IsEnumerable))
+                && !ImplementsEnumerable(property.Type))
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     DiagnosticDescriptors.InvalidSequenceEqualityAttributeUsage,
@@ -100,14 +123,14 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
         {
             var propertyLocation = property.Locations.FirstOrDefault();
 
-            if (property.Type.AllInterfaces.Any(IsDictionary))
+            if (ImplementsDictionary(property.Type))
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     DiagnosticDescriptors.MissingDictionaryEqualityAttribute,
                     propertyLocation,
                     property.Name));
             }
-            else if (!IsString(property.Type) && property.Type.AllInterfaces.Any(IsEnumerable))
+            else if (!IsString(property.Type) && ImplementsEnumerable(property.Type))
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     DiagnosticDescriptors.MissingSequenceEqualityAttribute,
@@ -144,6 +167,15 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
         };
     }
 
+    private static bool IsSystemBaseType(INamedTypeSymbol symbol)
+    {
+        return symbol is
+        {
+            Name: "Object" or "ValueType",
+            ContainingNamespace.Name: "System"
+        };
+    }
+
     private static bool IsString(ITypeSymbol targetSymbol)
     {
         return targetSymbol is
@@ -151,6 +183,26 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
             Name: "String",
             ContainingNamespace.Name: "System"
         };
+    }
+
+    /// <summary>
+    /// Returns true when the type either IS <c>IDictionary&lt;TKey, TValue&gt;</c>
+    /// or implements it, covering both interface-typed and concrete-typed properties.
+    /// </summary>
+    private static bool ImplementsDictionary(ITypeSymbol type)
+    {
+        return (type is INamedTypeSymbol named && IsDictionary(named))
+            || type.AllInterfaces.Any(IsDictionary);
+    }
+
+    /// <summary>
+    /// Returns true when the type either IS <c>IEnumerable&lt;T&gt;</c>
+    /// or implements it, covering both interface-typed and concrete-typed properties.
+    /// </summary>
+    private static bool ImplementsEnumerable(ITypeSymbol type)
+    {
+        return (type is INamedTypeSymbol named && IsEnumerable(named))
+            || type.AllInterfaces.Any(IsEnumerable);
     }
 
     private static bool IsEnumerable(INamedTypeSymbol targetSymbol)
