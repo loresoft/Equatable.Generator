@@ -48,6 +48,7 @@ jobs:
         if: success()
         uses: coverallsapp/github-action@v2
         with:
+          file: "${{github.workspace}}/test/**/coverage.info"
           format: lcov
 
       - name: Create Packages
