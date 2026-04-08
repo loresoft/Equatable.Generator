@@ -44,6 +44,9 @@ jobs:
       - name: Run Test
         run: dotnet test --no-build --configuration Release --coverlet --coverlet-output-format lcov
 
+      - name: Find Coverage Files
+        run: find ${{github.workspace}} -name "coverage.info" | tee /dev/stderr
+
       - name: Report Coverage
         if: success()
         uses: coverallsapp/github-action@v2
