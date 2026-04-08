@@ -44,14 +44,11 @@ jobs:
       - name: Run Test
         run: dotnet test --no-build --configuration Release --coverlet --coverlet-output-format lcov
 
-      - name: Find Coverage Files
-        run: find ${{github.workspace}} -name "coverage.info" | tee /dev/stderr
-
       - name: Report Coverage
         if: success()
         uses: coverallsapp/github-action@v2
         with:
-          file: "${{github.workspace}}/test/**/coverage.info"
+          file: "${{github.workspace}}/test/Equatable.Generator.Tests/bin/Release/net10.0/TestResults/coverage.info"
           format: lcov
 
       - name: Create Packages
