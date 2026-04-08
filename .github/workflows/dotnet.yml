@@ -33,7 +33,7 @@ jobs:
       - name: Install .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 9.x
+          dotnet-version: 10.x
 
       - name: Restore Dependencies
         run: dotnet restore
@@ -42,7 +42,7 @@ jobs:
         run: dotnet build --no-restore --configuration Release
 
       - name: Run Test
-        run: dotnet test --no-build --configuration Release --collect:"XPlat Code Coverage" --settings coverlet.runsettings
+        run: dotnet test --no-build --configuration Release --coverlet --coverlet-output-format lcov
 
       - name: Report Coverage
         if: success()
