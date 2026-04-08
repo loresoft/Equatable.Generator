@@ -1,0 +1,5 @@
+<Project>
+  <ItemGroup Condition="$(Language) == 'C#' and ($(ImplicitUsings) == 'enable' or $(ImplicitUsings) == 'true')">
+    <Using Include="Equatable.Attributes" />
+  </ItemGroup>
+</Project>

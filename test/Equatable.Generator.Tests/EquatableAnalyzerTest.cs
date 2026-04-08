@@ -14,7 +14,7 @@ public class EquatableAnalyzerTest
     [Fact]
     public async Task AnalyzeValidUsage()
     {
-        var source = @"
+        const string source = @"
 using System;
 using System.Collections.Generic;
 using Equatable.Attributes;
@@ -48,7 +48,7 @@ public partial class UserImport
     [Fact]
     public async Task AnalyzeIgnoreEqualityExcluded()
     {
-        var source = @"
+        const string source = @"
 using System;
 using System.Collections.Generic;
 using Equatable.Attributes;
@@ -73,7 +73,7 @@ public partial class UserImport
     [Fact]
     public async Task AnalyzeReferenceEqualityValid()
     {
-        var source = @"
+        const string source = @"
 using Equatable.Attributes;
 
 namespace Equatable.Entities;
@@ -96,7 +96,7 @@ public partial class Audit
     [Fact]
     public async Task AnalyzeCustomComparerValid()
     {
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -129,7 +129,7 @@ public class LengthEqualityComparer : IEqualityComparer<string?>
     [Fact]
     public async Task AnalyzeNotEquatableNoWarnings()
     {
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 
 namespace Equatable.Entities;
@@ -149,7 +149,7 @@ public class NotEquatable
     [Fact]
     public async Task AnalyzeInvalidStringEquality()
     {
-        var source = @"
+        const string source = @"
 using System;
 using Equatable.Attributes;
 
@@ -175,7 +175,7 @@ public partial class UserImport
     [Fact]
     public async Task AnalyzeInvalidDictionaryEquality()
     {
-        var source = @"
+        const string source = @"
 using System;
 using Equatable.Attributes;
 
@@ -201,7 +201,7 @@ public partial class UserImport
     [Fact]
     public async Task AnalyzeInvalidHashSetEquality()
     {
-        var source = @"
+        const string source = @"
 using System;
 using Equatable.Attributes;
 
@@ -227,7 +227,7 @@ public partial class UserImport
     [Fact]
     public async Task AnalyzeInvalidSequenceEquality()
     {
-        var source = @"
+        const string source = @"
 using System;
 using Equatable.Attributes;
 
@@ -253,7 +253,7 @@ public partial class UserImport
     [Fact]
     public async Task AnalyzeMissingDictionaryAttribute()
     {
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -278,7 +278,7 @@ public partial class UserImport
     [Fact]
     public async Task AnalyzeMissingSequenceAttribute()
     {
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -303,7 +303,7 @@ public partial class UserImport
     [Fact]
     public async Task AnalyzeMissingHashSetAttribute()
     {
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -329,7 +329,7 @@ public partial class UserImport
     public async Task AnalyzeStringNoMissingWarning()
     {
         // string implements IEnumerable<char> but should NOT trigger EQ0002
-        var source = @"
+        const string source = @"
 using Equatable.Attributes;
 
 namespace Equatable.Entities;
@@ -347,10 +347,10 @@ public partial class UserImport
     }
 
     [Fact]
-    public async Task AnalyzeDictionaryWithMissingAttributeEmitsDictDiagnostic()
+    public async Task AnalyzeDictionaryWithMissingAttributeEmitsDictionaryDiagnostic()
     {
         // Dictionary implements both IDictionary and IEnumerable, should emit EQ0001 (not EQ0002)
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -372,7 +372,7 @@ public partial class UserImport
     [Fact]
     public async Task AnalyzeMultipleMissingAttributes()
     {
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -397,7 +397,7 @@ public partial class UserImport
     [Fact]
     public async Task AnalyzeMissingDictionaryAttributeForIDictionary()
     {
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -422,7 +422,7 @@ public partial class UserImport
     [Fact]
     public async Task AnalyzeMissingSequenceAttributeForIEnumerable()
     {
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -447,7 +447,7 @@ public partial class UserImport
     [Fact]
     public async Task AnalyzeMissingSequenceAttributeForIReadOnlyCollection()
     {
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -473,7 +473,7 @@ public partial class UserImport
     public async Task AnalyzeDictionaryEqualityOnIDictionaryIsValid()
     {
         // [DictionaryEquality] on an IDictionary<,>-typed property must NOT emit EQ0011
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -496,7 +496,7 @@ public partial class UserImport
     public async Task AnalyzeSequenceEqualityOnIEnumerableIsValid()
     {
         // [SequenceEquality] on an IEnumerable<T>-typed property must NOT emit EQ0013
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -519,7 +519,7 @@ public partial class UserImport
     public async Task AnalyzeBaseTypePropertiesIncludedWhenNoEquatableBase()
     {
         // Properties from a non-[Equatable] base class should be analyzed
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -548,7 +548,7 @@ public partial class Priority : ModelBase
     public async Task AnalyzeBaseTypePropertiesExcludedWhenEquatableBase()
     {
         // Properties from a [Equatable] base class must NOT cause duplicate diagnostics on the derived type
-        var source = @"
+        const string source = @"
 using System.Collections.Generic;
 using Equatable.Attributes;
 
@@ -591,8 +591,7 @@ public partial class Priority : ModelBase
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var analyzer = new EquatableAnalyzer();
-        var compilationWithAnalyzers = compilation.WithAnalyzers(
-            ImmutableArray.Create<DiagnosticAnalyzer>(analyzer));
+        var compilationWithAnalyzers = compilation.WithAnalyzers([analyzer]);
 
         return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync();
     }

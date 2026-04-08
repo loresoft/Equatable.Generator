@@ -185,20 +185,12 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
         };
     }
 
-    /// <summary>
-    /// Returns true when the type either IS <c>IDictionary&lt;TKey, TValue&gt;</c>
-    /// or implements it, covering both interface-typed and concrete-typed properties.
-    /// </summary>
     private static bool ImplementsDictionary(ITypeSymbol type)
     {
         return (type is INamedTypeSymbol named && IsDictionary(named))
             || type.AllInterfaces.Any(IsDictionary);
     }
 
-    /// <summary>
-    /// Returns true when the type either IS <c>IEnumerable&lt;T&gt;</c>
-    /// or implements it, covering both interface-typed and concrete-typed properties.
-    /// </summary>
     private static bool ImplementsEnumerable(ITypeSymbol type)
     {
         return (type is INamedTypeSymbol named && IsEnumerable(named))
@@ -219,10 +211,7 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
                 ContainingNamespace:
                 {
                     Name: "Collections",
-                    ContainingNamespace:
-                    {
-                        Name: "System"
-                    }
+                    ContainingNamespace.Name: "System"
                 }
             }
         };
@@ -242,10 +231,7 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
                 ContainingNamespace:
                 {
                     Name: "Collections",
-                    ContainingNamespace:
-                    {
-                        Name: "System"
-                    }
+                    ContainingNamespace.Name: "System"
                 }
             }
         };
