@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <None Include="..\Equatable.SourceGenerator\bin\$(Configuration)\netstandard2.0\Equatable.SourceGenerator.dll" PackagePath="analyzers/dotnet/roslyn4.8/cs" Pack="true" Visible="false" />
-    <None Include="..\Equatable.SourceGenerator\Equatable.targets" PackagePath="build" Pack="true" Visible="false" />
+    <None Include="..\Equatable.SourceGenerator\Equatable.Generator.targets" PackagePath="build" Pack="true" Visible="false" />
 
   </ItemGroup>
 
