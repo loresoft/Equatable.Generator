@@ -221,7 +221,7 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
     {
         return targetSymbol is
         {
-            Name: "IDictionary",
+            Name: "IDictionary" or "IReadOnlyDictionary",
             IsGenericType: true,
             TypeArguments.Length: 2,
             TypeParameters.Length: 2,
