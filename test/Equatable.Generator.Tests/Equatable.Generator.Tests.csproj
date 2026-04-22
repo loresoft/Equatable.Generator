@@ -10,6 +10,10 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="coverlet.MTP" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
