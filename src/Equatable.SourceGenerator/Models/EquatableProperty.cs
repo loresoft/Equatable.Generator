@@ -5,4 +5,6 @@ public record EquatableProperty(
         string PropertyType,
         ComparerTypes ComparerType = ComparerTypes.Default,
         string? ComparerName = null,
-        string? ComparerInstance = null);
+        string? ComparerInstance = null,
+        // fully-composed comparer instance expression for ComparerTypes.Expression
+        string? ComparerExpression = null);

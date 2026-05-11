@@ -9,5 +9,7 @@ public enum ComparerTypes
     Sequence,
     String,
     ValueType,
-    Custom
+    Custom,
+    // a fully-composed IEqualityComparer<T> expression built by the generator for nested collections
+    Expression
 }

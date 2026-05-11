@@ -19,7 +19,7 @@ namespace Equatable.Entities
                 && DictionaryEquals(Permissions, other.Permissions)
                 && SequenceEquals(History, other.History);
 
-            static bool DictionaryEquals<TKey, TValue>(global::System.Collections.Generic.IDictionary<TKey, TValue>? left, global::System.Collections.Generic.IDictionary<TKey, TValue>? right)
+            static bool DictionaryEquals<TKey, TValue>(global::System.Collections.Generic.IEnumerable<global::System.Collections.Generic.KeyValuePair<TKey, TValue>>? left, global::System.Collections.Generic.IEnumerable<global::System.Collections.Generic.KeyValuePair<TKey, TValue>>? right)
             {
                 if (global::System.Object.ReferenceEquals(left, right))
                     return true;
@@ -27,20 +27,41 @@ namespace Equatable.Entities
                 if (left is null || right is null)
                     return false;
 
-                if (left.Count != right.Count)
+                if (left is global::System.Collections.Generic.IReadOnlyCollection<global::System.Collections.Generic.KeyValuePair<TKey, TValue>> leftCollection &&
+                    right is global::System.Collections.Generic.IReadOnlyCollection<global::System.Collections.Generic.KeyValuePair<TKey, TValue>> rightCollection &&
+                    leftCollection.Count != rightCollection.Count)
                     return false;
 
-                foreach (var pair in left)
+                if (right is global::System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> rightReadOnly)
                 {
-                    if (!right.TryGetValue(pair.Key, out var value))
-                        return false;
+                    foreach (var pair in left)
+                    {
+                        if (!rightReadOnly.TryGetValue(pair.Key, out var value))
+                            return false;
 
-                    if (!global::System.Collections.Generic.EqualityComparer<TValue>.Default.Equals(pair.Value, value))
-                        return false;
-
+                        if (!global::System.Collections.Generic.EqualityComparer<TValue>.Default.Equals(pair.Value, value))
+                            return false;
+                    }
+                    return true;
                 }
 
-                return true;
+                if (right is global::System.Collections.Generic.IDictionary<TKey, TValue> rightDictionary)
+                {
+                    foreach (var pair in left)
+                    {
+                        if (!rightDictionary.TryGetValue(pair.Key, out var value))
+                            return false;
+
+                        if (!global::System.Collections.Generic.EqualityComparer<TValue>.Default.Equals(pair.Value, value))
+                            return false;
+                    }
+                    return true;
+                }
+
+                return global::System.Linq.Enumerable.SequenceEqual(
+                    global::System.Linq.Enumerable.OrderBy(left, p => p.Key),
+                    global::System.Linq.Enumerable.OrderBy(right, p => p.Key),
+                    global::System.Collections.Generic.EqualityComparer<global::System.Collections.Generic.KeyValuePair<TKey, TValue>>.Default);
             }
 
             static bool HashSetEquals<T>(global::System.Collections.Generic.IEnumerable<T>? left, global::System.Collections.Generic.IEnumerable<T>? right)
@@ -106,19 +127,18 @@ namespace Equatable.Entities
             hashCode = (hashCode * -1521134295) + SequenceHashCode(History);
             return hashCode;
 
-            static int DictionaryHashCode<TKey, TValue>(global::System.Collections.Generic.IDictionary<TKey, TValue>? items)
+            static int DictionaryHashCode<TKey, TValue>(global::System.Collections.Generic.IEnumerable<global::System.Collections.Generic.KeyValuePair<TKey, TValue>>? items)
             {
                 if (items is null)
                     return 0;
 
-                int hashCode = 275986352;
+                int hashCode = 0;
 
-                // sort by key to ensure dictionary with different order are the same
-                foreach (var item in global::System.Linq.Enumerable.OrderBy(items, d => d.Key))
-                {
-                    hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<TKey>.Default.GetHashCode(item.Key!);
-                    hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<TValue>.Default.GetHashCode(item.Value!);
-                }
+                // sum of per-pair hashes is order-independent without sorting allocations
+                foreach (var item in items)
+                    hashCode += global::System.HashCode.Combine(
+                        global::System.Collections.Generic.EqualityComparer<TKey>.Default.GetHashCode(item.Key!),
+                        global::System.Collections.Generic.EqualityComparer<TValue>.Default.GetHashCode(item.Value!));
 
                 return hashCode;
             }
@@ -128,11 +148,11 @@ namespace Equatable.Entities
                 if (items is null)
                     return 0;
 
-                int hashCode = 275986352;
+                int hashCode = 0;
 
-                // sort to ensure set with different order are the same
-                foreach (var item in global::System.Linq.Enumerable.OrderBy(items, d => d))
-                    hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<T>.Default.GetHashCode(item!);
+                // sum of individual hashes is order-independent without sorting allocations
+                foreach (var item in items)
+                    hashCode += global::System.Collections.Generic.EqualityComparer<T>.Default.GetHashCode(item!);
 
                 return hashCode;
             }

@@ -188,6 +188,17 @@ public static class EquatableWriter
                         .Append(")");
 
                     break;
+                case ComparerTypes.Expression:
+                    codeBuilder
+                        .Append(" (")
+                        .Append(entityProperty.ComparerExpression)
+                        .Append(").Equals(")
+                        .Append(entityProperty.PropertyName)
+                        .Append(", other.")
+                        .Append(entityProperty.PropertyName)
+                        .Append(")");
+
+                    break;
                 case ComparerTypes.ValueType:
                     codeBuilder
                         .Append(" ")
@@ -485,6 +496,14 @@ public static class EquatableWriter
                         .Append(".")
                         .Append(entityProperty.ComparerInstance ?? "Default")
                         .Append(".GetHashCode(")
+                        .Append(entityProperty.PropertyName)
+                        .AppendLine("!);");
+                    break;
+                case ComparerTypes.Expression:
+                    codeBuilder
+                        .Append("hashCode = (hashCode * -1521134295) + (")
+                        .Append(entityProperty.ComparerExpression)
+                        .Append(").GetHashCode(")
                         .Append(entityProperty.PropertyName)
                         .AppendLine("!);");
                     break;

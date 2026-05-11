@@ -10,6 +10,11 @@
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
     <PackageVersion Include="MinVer" Version="7.0.0" />
     <PackageVersion Include="System.Text.Json" Version="10.0.7" />
+    <PackageVersion Include="FsCheck.Xunit" Version="3.3.2" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="MessagePack.Annotations" Version="2.5.108" />
     <PackageVersion Include="Verify.XunitV3" Version="31.16.3" />
     <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.2" />
   </ItemGroup>

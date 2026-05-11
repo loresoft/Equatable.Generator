@@ -12,10 +12,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MessagePack.Annotations" />
     <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Equatable.Comparers\Equatable.Comparers.csproj" />
     <ProjectReference Include="..\..\src\Equatable.Generator\Equatable.Generator.csproj" />
     <ProjectReference Include="..\..\src\Equatable.SourceGenerator\Equatable.SourceGenerator.csproj">
       <OutputItemType>Analyzer</OutputItemType>

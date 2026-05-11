@@ -541,6 +541,31 @@ public partial class UserImport
     }
 
     [Fact]
+    public Task GenerateSequenceEqualityMultiDimensionalArray()
+    {
+        var source = @"
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Grid
+{
+    [SequenceEquality]
+    public int[,]? Cells { get; set; }
+
+    public int Id { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
     public Task GenerateReadOnlyDictionary()
     {
         var source = @"
@@ -550,10 +575,10 @@ using Equatable.Attributes;
 namespace Equatable.Entities;
 
 [Equatable]
-public partial class MarketInputs
+public partial class LookupTable
 {
     [DictionaryEquality]
-    public IReadOnlyDictionary<string, double>? FlatInputs { get; set; }
+    public IReadOnlyDictionary<string, double>? FlatEntries { get; set; }
 }
 ";
 
@@ -565,6 +590,150 @@ public partial class MarketInputs
             .Verify(output)
             .UseDirectory("Snapshots")
             .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateNestedDictionary()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class LookupTable
+{
+    [DictionaryEquality]
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, double>>? NestedEntries { get; set; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        Assert.Empty(diagnostics);
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateNestedSequenceInDictionary()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class LookupTable
+{
+    [DictionaryEquality]
+    public IReadOnlyDictionary<string, List<double>>? NestedEntries { get; set; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        Assert.Empty(diagnostics);
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateSequenceOfDictionaries()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class LookupTable
+{
+    [SequenceEquality]
+    public List<IReadOnlyDictionary<string, double>>? Items { get; set; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        Assert.Empty(diagnostics);
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateDictOfLists()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class NestedCollections
+{
+    [DictionaryEquality]
+    public Dictionary<string, List<int>>? DictOfLists { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateListOfDicts()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class NestedCollections
+{
+    [SequenceEquality]
+    public List<Dictionary<string, int>>? ListOfDicts { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateThreeLevelNested()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class NestedCollections
+{
+    [DictionaryEquality]
+    public Dictionary<string, Dictionary<string, List<int>>>? ThreeLevelNested { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
     [Fact]
@@ -637,23 +806,296 @@ public partial class PricingContract
             .ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
-    private static (ImmutableArray<Diagnostic> Diagnostics, string Output) GetGeneratedOutput<T>(string source)
-        where T : IIncrementalGenerator, new()
+    // ── base class with non-[Equatable] generator attribute ───────────────────────────────────────
+    // These tests guard against the GetBaseEquatableType bug: only "EquatableAttribute" was checked,
+    // so a derived [Equatable] class whose base carries [DataContractEquatable] or
+    // [MessagePackEquatable] would silently omit base.Equals()/base.GetHashCode() calls.
+
+    [Fact]
+    public Task GenerateDerivedFromDataContractEquatableBase()
     {
-        var syntaxTree = CSharpSyntaxTree.ParseText(source);
-        var references = AppDomain.CurrentDomain.GetAssemblies()
+        var source = @"
+using System.Runtime.Serialization;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class ConcreteRecord : ContractBase
+{
+    public int Rank { get; set; }
+}
+
+[DataContractEquatable]
+public abstract partial class ContractBase
+{
+    [DataMember(Order = 0)]
+    public int Id { get; set; }
+
+    [DataMember(Order = 1)]
+    public string? Name { get; set; }
+}
+";
+        var (diagnostics, output) = GetNamedGeneratedOutput<EquatableGenerator>(source, "ConcreteRecord");
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateDerivedFromMessagePackEquatableBase()
+    {
+        var source = @"
+using MessagePack;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class ConcreteRecord : PackedBase
+{
+    public string? Label { get; set; }
+}
+
+[MessagePackEquatable]
+public abstract partial class PackedBase
+{
+    [Key(0)]
+    public int Id { get; set; }
+
+    [Key(1)]
+    public double Score { get; set; }
+}
+";
+        var (diagnostics, output) = GetNamedGeneratedOutput<EquatableGenerator>(source, "ConcreteRecord");
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    // ── derived class inherits base properties when base has no generator attribute ──────────────────
+    // When the derived class carries [DataContractEquatable] or [MessagePackEquatable] but the base
+    // has no generator attribute, the base's annotated properties must be included directly in the
+    // derived class's equality (no base.Equals() delegation — the base never generated Equals).
+
+    [Fact]
+    public Task GenerateDataContractEquatableDerivedIncludesUnannotatedBase()
+    {
+        var source = @"
+using System.Runtime.Serialization;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[DataContractEquatable]
+public partial class ConcreteRecord : UnannotatedBase
+{
+    [DataMember(Order = 2)]
+    public int Rank { get; set; }
+}
+
+public abstract class UnannotatedBase
+{
+    [DataMember(Order = 0)]
+    public int Id { get; set; }
+
+    [DataMember(Order = 1)]
+    public string? Name { get; set; }
+}
+";
+        var (diagnostics, output) = GetNamedGeneratedOutput<EquatableGenerator>(source, "ConcreteRecord");
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateMessagePackEquatableDerivedIncludesUnannotatedBase()
+    {
+        var source = @"
+using MessagePack;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[MessagePackEquatable]
+public partial class ConcreteRecord : UnannotatedBase
+{
+    [Key(2)]
+    public string? Label { get; set; }
+}
+
+public abstract class UnannotatedBase
+{
+    [Key(0)]
+    public int Id { get; set; }
+
+    [Key(1)]
+    public double Score { get; set; }
+}
+";
+        var (diagnostics, output) = GetNamedGeneratedOutput<EquatableGenerator>(source, "ConcreteRecord");
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    // ── interface-typed collection properties ──────────────────────────────────────────────────────
+    // These tests guard against regression of the ValidateComparer bug: interface types do not appear
+    // in their own AllInterfaces list, so the direct-type check must come first.
+
+    [Fact]
+    public Task GenerateIDictionaryEquality()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    [DictionaryEquality]
+    public IDictionary<string, int>? Entries { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateIEnumerableSequenceEquality()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    [SequenceEquality]
+    public IEnumerable<int>? Items { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateIListSequenceEquality()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    [SequenceEquality]
+    public IList<int>? Items { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateIReadOnlyListSequenceEquality()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    [SequenceEquality]
+    public IReadOnlyList<int>? Items { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateISetHashSetEquality()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    [HashSetEquality]
+    public ISet<int>? Tags { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateIReadOnlyCollectionSequenceEquality()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    [SequenceEquality]
+    public IReadOnlyCollection<int>? Items { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    // Pinned references that must always be present regardless of AppDomain load order.
+    // DataMemberAttribute and KeyAttribute live in separately-loaded assemblies that may not
+    // yet be in the AppDomain when a test runs first.
+    private static readonly IEnumerable<MetadataReference> PinnedReferences =
+    [
+        MetadataReference.CreateFromFile(typeof(System.Runtime.Serialization.DataMemberAttribute).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(MessagePack.KeyAttribute).Assembly.Location),
+    ];
+
+    private static IEnumerable<MetadataReference> BuildReferences<T>()
+        where T : IIncrementalGenerator, new()
+        => AppDomain.CurrentDomain.GetAssemblies()
             .Where(assembly => !assembly.IsDynamic && !string.IsNullOrWhiteSpace(assembly.Location))
             .Select(assembly => MetadataReference.CreateFromFile(assembly.Location))
             .Concat(
             [
                 MetadataReference.CreateFromFile(typeof(T).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(EquatableAttribute).Assembly.Location),
-            ]);
+            ])
+            .Concat(PinnedReferences);
+
+    private static (ImmutableArray<Diagnostic> Diagnostics, string Output) GetGeneratedOutput<T>(string source)
+        where T : IIncrementalGenerator, new()
+    {
+        var syntaxTree = CSharpSyntaxTree.ParseText(source);
 
         var compilation = CSharpCompilation.Create(
             "Test.Generator",
             [syntaxTree],
-            references,
+            BuildReferences<T>(),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var originalTreeCount = compilation.SyntaxTrees.Length;
@@ -665,5 +1107,29 @@ public partial class PricingContract
         var trees = outputCompilation.SyntaxTrees.ToList();
 
         return (diagnostics, trees.Count != originalTreeCount ? trees[^1].ToString() : string.Empty);
+    }
+
+    private static (ImmutableArray<Diagnostic> Diagnostics, string Output) GetNamedGeneratedOutput<T>(string source, string typeName)
+        where T : IIncrementalGenerator, new()
+    {
+        var syntaxTree = CSharpSyntaxTree.ParseText(source);
+
+        var compilation = CSharpCompilation.Create(
+            "Test.Generator",
+            [syntaxTree],
+            BuildReferences<T>(),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        var originalTreeCount = compilation.SyntaxTrees.Length;
+        var generator = new T();
+
+        var driver = CSharpGeneratorDriver.Create(generator);
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
+
+        var generated = outputCompilation.SyntaxTrees.Skip(originalTreeCount).ToList();
+        var match = generated.FirstOrDefault(t => t.ToString().Contains($"partial class {typeName}"))
+            ?? (generated.Count > 0 ? generated[^1] : null);
+
+        return (diagnostics, match?.ToString() ?? string.Empty);
     }
 }

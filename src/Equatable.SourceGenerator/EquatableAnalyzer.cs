@@ -51,7 +51,7 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
             if (IsSystemBaseType(currentSymbol))
                 break;
 
-            // If a base type (not the target itself) has [Equatable], stop: it will be analyzed separately
+            // If a base type (not the target itself) has any generator attribute, stop: it will be analyzed separately
             if (!SymbolEqualityComparer.Default.Equals(currentSymbol, typeSymbol) && HasEquatableAttribute(currentSymbol))
                 break;
 
@@ -143,7 +143,8 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
     private static bool HasEquatableAttribute(INamedTypeSymbol typeSymbol)
     {
         return typeSymbol.GetAttributes().Any(
-            a => IsKnownAttribute(a) && a.AttributeClass?.Name == "EquatableAttribute");
+            a => IsKnownAttribute(a) && a.AttributeClass?.Name is
+                "EquatableAttribute" or "DataContractEquatableAttribute" or "MessagePackEquatableAttribute");
     }
 
     private static bool IsIgnored(IPropertySymbol propertySymbol)
@@ -193,6 +194,11 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
 
     private static bool ImplementsEnumerable(ITypeSymbol type)
     {
+        // Arrays (including multi-dimensional) are always valid for [SequenceEquality]:
+        // single-dim arrays implement IEnumerable<T>; multi-dim use MultiDimensionalArrayEqualityComparer.
+        if (type is IArrayTypeSymbol)
+            return true;
+
         return (type is INamedTypeSymbol named && IsEnumerable(named))
             || type.AllInterfaces.Any(IsEnumerable);
     }

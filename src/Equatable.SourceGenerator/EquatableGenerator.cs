@@ -156,17 +156,8 @@ public class EquatableGenerator : IIncrementalGenerator
         var isValueType = propertySymbol.Type.IsValueType;
         var defaultComparer = isValueType ? ComparerTypes.ValueType : ComparerTypes.Default;
 
-        // look for custom equality
+        // look for an explicit equality attribute
         var attributes = propertySymbol.GetAttributes();
-        if (attributes.Length == 0)
-        {
-            return new EquatableProperty(
-                propertyName,
-                propertyType,
-                defaultComparer);
-        }
-
-        // search for known attribute
         foreach (var attribute in attributes)
         {
             (var comparerType, var comparerName, var comparerInstance) = GetComparer(attribute);
@@ -176,44 +167,229 @@ public class EquatableGenerator : IIncrementalGenerator
 
             var isValid = ValidateComparer(propertySymbol, comparerType);
             if (!isValid)
+                return new EquatableProperty(propertyName, propertyType, defaultComparer);
+
+            // for collection attributes, check if the element type itself contains nested collections
+            // that need a composed comparer rather than EqualityComparer<TValue>.Default.
+            // BuildArrayComparerExpression always returns a non-null expression for arrays
+            // (including multi-dimensional, which use MultiDimensionalArrayEqualityComparer).
+            if (comparerType is ComparerTypes.Dictionary or ComparerTypes.HashSet or ComparerTypes.Sequence)
             {
-                return new EquatableProperty(
-                    propertyName,
-                    propertyType,
-                    defaultComparer);
+                string? expression = propertySymbol.Type switch
+                {
+                    INamedTypeSymbol namedType => BuildCollectionComparerExpression(namedType, comparerType.Value),
+                    IArrayTypeSymbol arrayType => BuildArrayComparerExpression(arrayType),
+                    _ => null
+                };
+                if (expression != null)
+                    return new EquatableProperty(propertyName, propertyType, ComparerTypes.Expression, ComparerExpression: expression);
             }
 
-            return new EquatableProperty(
-                propertyName,
-                propertyType,
-                comparerType.Value,
-                comparerName,
-                comparerInstance);
+            return new EquatableProperty(propertyName, propertyType, comparerType.Value, comparerName, comparerInstance);
         }
 
-        return new EquatableProperty(
-            propertyName,
-            propertyType,
-            defaultComparer);
+        return new EquatableProperty(propertyName, propertyType, defaultComparer);
+    }
+
+    // Returns a fully-qualified IEqualityComparer instance expression for a collection type
+    // when its element type is itself a collection (requires composition).
+    // Returns null when EqualityComparer<T>.Default is sufficient (element is a plain type).
+    // Depth is unbounded — recursion terminates naturally when an element type is not a
+    // recognised collection interface (BuildElementComparerExpression returns null).
+    private static string? BuildCollectionComparerExpression(INamedTypeSymbol collectionType, ComparerTypes kind)
+    {
+        // unwrap nullable wrapper
+        var unwrapped = collectionType.IsGenericType
+            && collectionType.OriginalDefinition.SpecialType == SpecialType.None
+            && collectionType.Name == "Nullable"
+            ? collectionType.TypeArguments[0] as INamedTypeSymbol ?? collectionType
+            : collectionType;
+
+        // find the collection interface and extract element type(s)
+        INamedTypeSymbol? dictInterface = IsDictionary(unwrapped) ? unwrapped
+            : unwrapped.AllInterfaces.FirstOrDefault(IsDictionary);
+
+        INamedTypeSymbol? enumInterface = IsEnumerable(unwrapped) ? unwrapped
+            : unwrapped.AllInterfaces.FirstOrDefault(IsEnumerable);
+
+        if (kind == ComparerTypes.Dictionary && dictInterface != null)
+        {
+            var keyType = dictInterface.TypeArguments[0];
+            var valueType = dictInterface.TypeArguments[1];
+
+            var keyExpr = BuildElementComparerExpression(keyType);
+            var valueExpr = BuildElementComparerExpression(valueType);
+
+            // only compose if at least one argument needs a non-default comparer
+            if (keyExpr == null && valueExpr == null)
+                return null;
+
+            var keyTypeFq = keyType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var valueTypeFq = valueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            keyExpr ??= $"global::System.Collections.Generic.EqualityComparer<{keyTypeFq}>.Default";
+            valueExpr ??= $"global::System.Collections.Generic.EqualityComparer<{valueTypeFq}>.Default";
+
+            var isReadOnly = IsReadOnlyDictionary(unwrapped) || unwrapped.AllInterfaces.Any(IsReadOnlyDictionary);
+            var comparerClass = isReadOnly
+                ? "global::Equatable.Comparers.ReadOnlyDictionaryEqualityComparer"
+                : "global::Equatable.Comparers.DictionaryEqualityComparer";
+
+            return $"new {comparerClass}<{keyTypeFq}, {valueTypeFq}>({keyExpr}, {valueExpr})";
+        }
+
+        if ((kind == ComparerTypes.HashSet || kind == ComparerTypes.Sequence) && enumInterface != null)
+        {
+            var elementType = enumInterface.TypeArguments[0];
+            var elementExpr = BuildElementComparerExpression(elementType);
+
+            if (elementExpr == null)
+                return null;
+
+            var elementTypeFq = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var comparerClass = kind == ComparerTypes.HashSet
+                ? "global::Equatable.Comparers.HashSetEqualityComparer"
+                : "global::Equatable.Comparers.SequenceEqualityComparer";
+
+            return $"new {comparerClass}<{elementTypeFq}>({elementExpr})";
+        }
+
+        return null;
+    }
+
+    // Returns a comparer expression for a single element type, or null if EqualityComparer<T>.Default suffices.
+    // Terminates naturally when elementType is not a recognised collection interface.
+    // visited guards against self-referential types (e.g. class A : IEnumerable<A>).
+    private static string? BuildElementComparerExpression(ITypeSymbol elementType, HashSet<ITypeSymbol>? visited = null)
+    {
+        if (elementType is IArrayTypeSymbol arrayType)
+            return BuildArrayComparerExpression(arrayType);
+
+        if (elementType is not INamedTypeSymbol named)
+            return null;
+
+        // string implements IEnumerable<char> but must use default equality, not SequenceEqualityComparer<char>
+        if (IsString(named))
+            return null;
+
+        visited ??= new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+        if (!visited.Add(elementType))
+            return null; // cycle detected
+
+        // always scan AllInterfaces — covers concrete types (List<T>, HashSet<T>, Dictionary<K,V>, etc.)
+        // dictionary check takes priority over enumerable
+        var asDictInterface = IsDictionary(named) ? named
+            : named.AllInterfaces.FirstOrDefault(IsDictionary);
+
+        if (asDictInterface != null)
+        {
+            var isReadOnly = IsReadOnlyDictionary(named)
+                || named.AllInterfaces.Any(IsReadOnlyDictionary);
+            return BuildDictComparerExpression(asDictInterface, isReadOnly, visited);
+        }
+
+        var asEnumInterface = IsEnumerable(named) ? named
+            : named.AllInterfaces.FirstOrDefault(IsEnumerable);
+
+        if (asEnumInterface != null)
+        {
+            var innerType = asEnumInterface.TypeArguments[0];
+            var innerExpr = BuildElementComparerExpression(innerType, visited);
+            var innerTypeFq = innerType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+            var isSet = named.AllInterfaces.Any(i => i is { Name: "ISet" or "IReadOnlySet", IsGenericType: true })
+                || named is { Name: "ISet" or "IReadOnlySet", IsGenericType: true };
+            var comparerClass = isSet
+                ? "global::Equatable.Comparers.HashSetEqualityComparer"
+                : "global::Equatable.Comparers.SequenceEqualityComparer";
+
+            if (innerExpr != null)
+                return $"new {comparerClass}<{innerTypeFq}>({innerExpr})";
+
+            return $"{comparerClass}<{innerTypeFq}>.Default";
+        }
+
+        return null;
+    }
+
+    private static string BuildDictComparerExpression(INamedTypeSymbol dictInterface, bool isReadOnly, HashSet<ITypeSymbol>? visited = null)
+    {
+        var keyType = dictInterface.TypeArguments[0];
+        var valueType = dictInterface.TypeArguments[1];
+        var keyTypeFq = keyType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var valueTypeFq = valueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+        var keyExpr = BuildElementComparerExpression(keyType, visited)
+            ?? $"global::System.Collections.Generic.EqualityComparer<{keyTypeFq}>.Default";
+        var valueExpr = BuildElementComparerExpression(valueType, visited)
+            ?? $"global::System.Collections.Generic.EqualityComparer<{valueTypeFq}>.Default";
+
+        var comparerClass = isReadOnly
+            ? "global::Equatable.Comparers.ReadOnlyDictionaryEqualityComparer"
+            : "global::Equatable.Comparers.DictionaryEqualityComparer";
+
+        return $"new {comparerClass}<{keyTypeFq}, {valueTypeFq}>({keyExpr}, {valueExpr})";
+    }
+
+    private static string BuildArrayComparerExpression(IArrayTypeSymbol arrayType)
+    {
+        var elementType = arrayType.ElementType;
+        var elementTypeFq = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var innerExpr = BuildElementComparerExpression(elementType);
+
+        if (arrayType.Rank > 1)
+        {
+            // Multi-dimensional arrays don't implement IEnumerable<T>; use the dedicated comparer
+            // that iterates via Array.GetEnumerator() with no LINQ or intermediate allocations.
+            if (innerExpr != null)
+                return $"new global::Equatable.Comparers.MultiDimensionalArrayEqualityComparer<{elementTypeFq}>({innerExpr})";
+            return $"global::Equatable.Comparers.MultiDimensionalArrayEqualityComparer<{elementTypeFq}>.Default";
+        }
+
+        if (innerExpr != null)
+            return $"new global::Equatable.Comparers.SequenceEqualityComparer<{elementTypeFq}>({innerExpr})";
+        return $"global::Equatable.Comparers.SequenceEqualityComparer<{elementTypeFq}>.Default";
+    }
+
+    private static bool IsReadOnlyDictionary(INamedTypeSymbol targetSymbol)
+    {
+        return targetSymbol is
+        {
+            Name: "IReadOnlyDictionary",
+            IsGenericType: true,
+            TypeArguments.Length: 2,
+            ContainingNamespace:
+            {
+                Name: "Generic",
+                ContainingNamespace:
+                {
+                    Name: "Collections",
+                    ContainingNamespace.Name: "System"
+                }
+            }
+        };
     }
 
     private static bool ValidateComparer(IPropertySymbol propertySymbol, ComparerTypes? comparerType)
     {
         // don't need to validate these types
-        if (comparerType is null or ComparerTypes.Default or ComparerTypes.Reference or ComparerTypes.Custom)
+        if (comparerType is null or ComparerTypes.Default or ComparerTypes.Reference or ComparerTypes.Custom or ComparerTypes.Expression)
             return true;
 
         if (comparerType == ComparerTypes.String)
             return IsString(propertySymbol.Type);
 
         if (comparerType == ComparerTypes.Dictionary)
-            return propertySymbol.Type.AllInterfaces.Any(IsDictionary);
+            return (propertySymbol.Type is INamedTypeSymbol nt && IsDictionary(nt))
+                || propertySymbol.Type.AllInterfaces.Any(IsDictionary);
 
         if (comparerType == ComparerTypes.HashSet)
-            return propertySymbol.Type.AllInterfaces.Any(IsEnumerable);
+            return (propertySymbol.Type is INamedTypeSymbol ntHs && IsEnumerable(ntHs))
+                || propertySymbol.Type.AllInterfaces.Any(IsEnumerable);
 
         if (comparerType == ComparerTypes.Sequence)
-            return propertySymbol.Type.AllInterfaces.Any(IsEnumerable);
+            return propertySymbol.Type is IArrayTypeSymbol
+                || (propertySymbol.Type is INamedTypeSymbol ntSeq && IsEnumerable(ntSeq))
+                || propertySymbol.Type.AllInterfaces.Any(IsEnumerable);
 
         return true;
     }
@@ -309,10 +485,18 @@ public class EquatableGenerator : IIncrementalGenerator
         if (attributes.Length == 0)
             return false;
 
-        if (attributes.Any(a => a.AttributeClass is { Name: "IgnoreDataMemberAttribute", ContainingNamespace.Name: "Serialization" }))
+        if (attributes.Any(a => a.AttributeClass is
+            {
+                Name: "IgnoreDataMemberAttribute",
+                ContainingNamespace: { Name: "Serialization", ContainingNamespace: { Name: "Runtime", ContainingNamespace.Name: "System" } }
+            }))
             return false;
 
-        return attributes.Any(a => a.AttributeClass is { Name: "DataMemberAttribute", ContainingNamespace.Name: "Serialization" });
+        return attributes.Any(a => a.AttributeClass is
+        {
+            Name: "DataMemberAttribute",
+            ContainingNamespace: { Name: "Serialization", ContainingNamespace: { Name: "Runtime", ContainingNamespace.Name: "System" } }
+        });
     }
 
     private static bool IsIncludedMessagePack(IPropertySymbol propertySymbol)
@@ -369,10 +553,7 @@ public class EquatableGenerator : IIncrementalGenerator
                 ContainingNamespace:
                 {
                     Name: "Collections",
-                    ContainingNamespace:
-                    {
-                        Name: "System"
-                    }
+                    ContainingNamespace.Name: "System"
                 }
             }
         };
@@ -392,10 +573,7 @@ public class EquatableGenerator : IIncrementalGenerator
                 ContainingNamespace:
                 {
                     Name: "Collections",
-                    ContainingNamespace:
-                    {
-                        Name: "System"
-                    }
+                    ContainingNamespace.Name: "System"
                 }
             }
         };
@@ -523,7 +701,8 @@ public class EquatableGenerator : IIncrementalGenerator
                 return null;
 
             var attributes = currentSymbol.GetAttributes();
-            if (attributes.Length > 0 && attributes.Any(a => IsKnownAttribute(a) && a.AttributeClass?.Name == "EquatableAttribute"))
+            if (attributes.Length > 0 && attributes.Any(a => IsKnownAttribute(a) && a.AttributeClass?.Name is
+                    "EquatableAttribute" or "DataContractEquatableAttribute" or "MessagePackEquatableAttribute"))
             {
                 return currentSymbol;
             }

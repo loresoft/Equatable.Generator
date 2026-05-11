@@ -1,8 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
@@ -10,24 +9,18 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-  </PropertyGroup>
-
   <ItemGroup>
-    <Compile Remove="Properties\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="coverlet.MTP" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
-    <PackageReference Include="Verify.XunitV3" />
-    <PackageReference Include="xunit.v3.mtp-v2" />
+    <PackageReference Include="FsCheck.Xunit" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Equatable.Comparers\Equatable.Comparers.csproj" />
-    <ProjectReference Include="..\..\src\Equatable.Generator\Equatable.Generator.csproj" />
     <ProjectReference Include="..\..\src\Equatable.SourceGenerator\Equatable.SourceGenerator.csproj">
       <OutputItemType>Analyzer</OutputItemType>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
@@ -37,6 +30,9 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="FsCheck" />
+    <Using Include="FsCheck.Xunit" />
+    <Using Include="FsCheck.Fluent" />
   </ItemGroup>
 
 </Project>
