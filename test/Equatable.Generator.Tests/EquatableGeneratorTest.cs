@@ -747,6 +747,7 @@ using Equatable.Attributes;
 
 namespace Equatable.Entities;
 
+[DataContract]
 [DataContractEquatable]
 public partial class OrderDataContract
 {
@@ -782,6 +783,7 @@ using Equatable.Attributes;
 
 namespace Equatable.Entities;
 
+[MessagePackObject]
 [MessagePackEquatable]
 public partial class PricingContract
 {
@@ -828,6 +830,7 @@ public partial class ConcreteRecord : ContractBase
     public int Rank { get; set; }
 }
 
+[DataContract]
 [DataContractEquatable]
 public abstract partial class ContractBase
 {
@@ -858,6 +861,7 @@ public partial class ConcreteRecord : PackedBase
     public string? Label { get; set; }
 }
 
+[MessagePackObject]
 [MessagePackEquatable]
 public abstract partial class PackedBase
 {
@@ -887,6 +891,7 @@ using Equatable.Attributes;
 
 namespace Equatable.Entities;
 
+[DataContract]
 [DataContractEquatable]
 public partial class ConcreteRecord : UnannotatedBase
 {
@@ -917,6 +922,7 @@ using Equatable.Attributes;
 
 namespace Equatable.Entities;
 
+[MessagePackObject]
 [MessagePackEquatable]
 public partial class ConcreteRecord : UnannotatedBase
 {

@@ -4,6 +4,7 @@ using Equatable.Attributes;
 
 namespace Equatable.Entities;
 
+[DataContract]
 [DataContractEquatable]
 public partial class OrderDataContract
 {

@@ -2,6 +2,8 @@ using System.Collections.Immutable;
 
 using Equatable.Attributes;
 using Equatable.SourceGenerator;
+using Equatable.SourceGenerator.DataContract;
+using Equatable.SourceGenerator.MessagePack;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -573,7 +575,102 @@ public partial class Priority : ModelBase
         Assert.Empty(diagnostics);
     }
 
-    private static async Task<ImmutableArray<Diagnostic>> GetAnalyzerDiagnosticsAsync(string source)
+    [Fact]
+    public async Task AnalyzeDataContractEquatableMissingDataContract()
+    {
+        const string source = @"
+using System.Runtime.Serialization;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[DataContractEquatable]
+public partial class OrderDataContract
+{
+    [DataMember(Order = 0)]
+    public int Id { get; set; }
+}
+";
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(source,
+            new DataContractEquatableAnalyzer());
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0020", diagnostic.Id);
+        Assert.Contains("OrderDataContract", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeDataContractEquatableWithDataContractIsValid()
+    {
+        const string source = @"
+using System.Runtime.Serialization;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[DataContract]
+[DataContractEquatable]
+public partial class OrderDataContract
+{
+    [DataMember(Order = 0)]
+    public int Id { get; set; }
+}
+";
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(source,
+            new DataContractEquatableAnalyzer());
+
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public async Task AnalyzeMessagePackEquatableMissingMessagePackObject()
+    {
+        const string source = @"
+using MessagePack;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[MessagePackEquatable]
+public partial class PricingContract
+{
+    [Key(0)]
+    public int MarketId { get; set; }
+}
+";
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(source,
+            new MessagePackEquatableAnalyzer());
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0021", diagnostic.Id);
+        Assert.Contains("PricingContract", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeMessagePackEquatableWithMessagePackObjectIsValid()
+    {
+        const string source = @"
+using MessagePack;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[MessagePackObject]
+[MessagePackEquatable]
+public partial class PricingContract
+{
+    [Key(0)]
+    public int MarketId { get; set; }
+}
+";
+        var diagnostics = await GetAnalyzerDiagnosticsAsync(source,
+            new MessagePackEquatableAnalyzer());
+
+        Assert.Empty(diagnostics);
+    }
+
+    private static async Task<ImmutableArray<Diagnostic>> GetAnalyzerDiagnosticsAsync(
+        string source, params DiagnosticAnalyzer[] additionalAnalyzers)
     {
         var syntaxTree = CSharpSyntaxTree.ParseText(source);
         var references = AppDomain.CurrentDomain.GetAssemblies()
@@ -582,6 +679,10 @@ public partial class Priority : ModelBase
             .Concat(
             [
                 MetadataReference.CreateFromFile(typeof(EquatableAttribute).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Equatable.Attributes.DataContractEquatableAttribute).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Equatable.Attributes.MessagePackEquatableAttribute).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(System.Runtime.Serialization.DataMemberAttribute).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(MessagePack.KeyAttribute).Assembly.Location),
             ]);
 
         var compilation = CSharpCompilation.Create(
@@ -590,8 +691,8 @@ public partial class Priority : ModelBase
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-        var analyzer = new EquatableAnalyzer();
-        var compilationWithAnalyzers = compilation.WithAnalyzers([analyzer]);
+        DiagnosticAnalyzer[] analyzers = [new EquatableAnalyzer(), .. additionalAnalyzers];
+        var compilationWithAnalyzers = compilation.WithAnalyzers([.. analyzers]);
 
         return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync();
     }
