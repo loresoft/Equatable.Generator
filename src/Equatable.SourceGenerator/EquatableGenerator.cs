@@ -446,6 +446,9 @@ public class EquatableGenerator : IIncrementalGenerator
     }
 
 
+    public static bool IsPublicInstanceProperty(IPropertySymbol propertySymbol) =>
+        !propertySymbol.IsIndexer && propertySymbol.DeclaredAccessibility == Accessibility.Public;
+
     private static bool IsIncluded(IPropertySymbol propertySymbol)
     {
         var attributes = propertySymbol.GetAttributes();

@@ -1,5 +1,4 @@
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Equatable.SourceGenerator.DataContract;
 
@@ -16,7 +15,7 @@ public class DataContractEquatableGenerator : IIncrementalGenerator
 
     private static bool IsIncludedDataContract(IPropertySymbol propertySymbol)
     {
-        if (propertySymbol.IsIndexer || propertySymbol.DeclaredAccessibility != Accessibility.Public)
+        if (!EquatableGenerator.IsPublicInstanceProperty(propertySymbol))
             return false;
 
         var attributes = propertySymbol.GetAttributes();

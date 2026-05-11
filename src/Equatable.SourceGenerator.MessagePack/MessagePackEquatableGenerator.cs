@@ -15,7 +15,7 @@ public class MessagePackEquatableGenerator : IIncrementalGenerator
 
     private static bool IsIncludedMessagePack(IPropertySymbol propertySymbol)
     {
-        if (propertySymbol.IsIndexer || propertySymbol.DeclaredAccessibility != Accessibility.Public)
+        if (!EquatableGenerator.IsPublicInstanceProperty(propertySymbol))
             return false;
 
         var attributes = propertySymbol.GetAttributes();
