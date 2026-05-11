@@ -2,6 +2,8 @@ using System.Collections.Immutable;
 
 using Equatable.Attributes;
 using Equatable.SourceGenerator;
+using Equatable.SourceGenerator.DataContract;
+using Equatable.SourceGenerator.MessagePack;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -761,7 +763,7 @@ public partial class OrderDataContract
 }
 ";
 
-        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        var (diagnostics, output) = GetGeneratedOutput<DataContractEquatableGenerator>(source);
 
         Assert.Empty(diagnostics);
 
@@ -796,7 +798,7 @@ public partial class PricingContract
 }
 ";
 
-        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        var (diagnostics, output) = GetGeneratedOutput<MessagePackEquatableGenerator>(source);
 
         Assert.Empty(diagnostics);
 
@@ -901,7 +903,7 @@ public abstract class UnannotatedBase
     public string? Name { get; set; }
 }
 ";
-        var (diagnostics, output) = GetNamedGeneratedOutput<EquatableGenerator>(source, "ConcreteRecord");
+        var (diagnostics, output) = GetNamedGeneratedOutput<DataContractEquatableGenerator>(source, "ConcreteRecord");
         Assert.Empty(diagnostics);
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
@@ -931,7 +933,7 @@ public abstract class UnannotatedBase
     public double Score { get; set; }
 }
 ";
-        var (diagnostics, output) = GetNamedGeneratedOutput<EquatableGenerator>(source, "ConcreteRecord");
+        var (diagnostics, output) = GetNamedGeneratedOutput<MessagePackEquatableGenerator>(source, "ConcreteRecord");
         Assert.Empty(diagnostics);
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
@@ -1067,12 +1069,13 @@ public partial class Container
     }
 
     // Pinned references that must always be present regardless of AppDomain load order.
-    // DataMemberAttribute and KeyAttribute live in separately-loaded assemblies that may not
-    // yet be in the AppDomain when a test runs first.
+    // Adapter attribute assemblies and serialization libraries may not be loaded when a test runs first.
     private static readonly IEnumerable<MetadataReference> PinnedReferences =
     [
         MetadataReference.CreateFromFile(typeof(System.Runtime.Serialization.DataMemberAttribute).Assembly.Location),
         MetadataReference.CreateFromFile(typeof(MessagePack.KeyAttribute).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(Equatable.Attributes.DataContractEquatableAttribute).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(Equatable.Attributes.MessagePackEquatableAttribute).Assembly.Location),
     ];
 
     private static IEnumerable<MetadataReference> BuildReferences<T>()
@@ -1084,6 +1087,8 @@ public partial class Container
             [
                 MetadataReference.CreateFromFile(typeof(T).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(EquatableAttribute).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(DataContractEquatableGenerator).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(MessagePackEquatableGenerator).Assembly.Location),
             ])
             .Concat(PinnedReferences);
 

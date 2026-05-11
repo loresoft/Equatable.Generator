@@ -18,19 +18,9 @@ public class EquatableGenerator : IIncrementalGenerator
             fullyQualifiedMetadataName: "Equatable.Attributes.EquatableAttribute",
             trackingName: "EquatableAttribute",
             propertyFilter: IsIncluded);
-
-        RegisterProvider(context,
-            fullyQualifiedMetadataName: "Equatable.Attributes.DataContractEquatableAttribute",
-            trackingName: "DataContractEquatableAttribute",
-            propertyFilter: IsIncludedDataContract);
-
-        RegisterProvider(context,
-            fullyQualifiedMetadataName: "Equatable.Attributes.MessagePackEquatableAttribute",
-            trackingName: "MessagePackEquatableAttribute",
-            propertyFilter: IsIncludedMessagePack);
     }
 
-    private static void RegisterProvider(
+    public static void RegisterProvider(
         IncrementalGeneratorInitializationContext context,
         string fullyQualifiedMetadataName,
         string trackingName,
@@ -49,7 +39,7 @@ public class EquatableGenerator : IIncrementalGenerator
     }
 
 
-    private static void Execute(SourceProductionContext context, EquatableClass? entityClass)
+    public static void Execute(SourceProductionContext context, EquatableClass? entityClass)
     {
         if (entityClass == null)
             return;
@@ -476,44 +466,6 @@ public class EquatableGenerator : IIncrementalGenerator
         return !propertySymbol.IsIndexer && propertySymbol.DeclaredAccessibility == Accessibility.Public;
     }
 
-    private static bool IsIncludedDataContract(IPropertySymbol propertySymbol)
-    {
-        if (propertySymbol.IsIndexer || propertySymbol.DeclaredAccessibility != Accessibility.Public)
-            return false;
-
-        var attributes = propertySymbol.GetAttributes();
-        if (attributes.Length == 0)
-            return false;
-
-        if (attributes.Any(a => a.AttributeClass is
-            {
-                Name: "IgnoreDataMemberAttribute",
-                ContainingNamespace: { Name: "Serialization", ContainingNamespace: { Name: "Runtime", ContainingNamespace.Name: "System" } }
-            }))
-            return false;
-
-        return attributes.Any(a => a.AttributeClass is
-        {
-            Name: "DataMemberAttribute",
-            ContainingNamespace: { Name: "Serialization", ContainingNamespace: { Name: "Runtime", ContainingNamespace.Name: "System" } }
-        });
-    }
-
-    private static bool IsIncludedMessagePack(IPropertySymbol propertySymbol)
-    {
-        if (propertySymbol.IsIndexer || propertySymbol.DeclaredAccessibility != Accessibility.Public)
-            return false;
-
-        var attributes = propertySymbol.GetAttributes();
-        if (attributes.Length == 0)
-            return false;
-
-        if (attributes.Any(a => a.AttributeClass is { Name: "IgnoreMemberAttribute", ContainingNamespace.Name: "MessagePack" }))
-            return false;
-
-        return attributes.Any(a => a.AttributeClass is { Name: "KeyAttribute", ContainingNamespace.Name: "MessagePack" });
-    }
-
     private static bool IsKnownAttribute(AttributeData? attribute)
     {
         if (attribute == null)
@@ -701,8 +653,8 @@ public class EquatableGenerator : IIncrementalGenerator
                 return null;
 
             var attributes = currentSymbol.GetAttributes();
-            if (attributes.Length > 0 && attributes.Any(a => IsKnownAttribute(a) && a.AttributeClass?.Name is
-                    "EquatableAttribute" or "DataContractEquatableAttribute" or "MessagePackEquatableAttribute"))
+            if (attributes.Length > 0 && attributes.Any(a => IsKnownAttribute(a)
+                    && a.AttributeClass?.Name.EndsWith("EquatableAttribute") == true))
             {
                 return currentSymbol;
             }

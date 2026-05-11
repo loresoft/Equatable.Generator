@@ -28,7 +28,17 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Equatable.Comparers\Equatable.Comparers.csproj" />
     <ProjectReference Include="..\..\src\Equatable.Generator\Equatable.Generator.csproj" />
+    <ProjectReference Include="..\..\src\Equatable.Generator.DataContract\Equatable.Generator.DataContract.csproj" />
+    <ProjectReference Include="..\..\src\Equatable.Generator.MessagePack\Equatable.Generator.MessagePack.csproj" />
     <ProjectReference Include="..\..\src\Equatable.SourceGenerator\Equatable.SourceGenerator.csproj">
+      <OutputItemType>Analyzer</OutputItemType>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\Equatable.SourceGenerator.DataContract\Equatable.SourceGenerator.DataContract.csproj">
+      <OutputItemType>Analyzer</OutputItemType>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\Equatable.SourceGenerator.MessagePack\Equatable.SourceGenerator.MessagePack.csproj">
       <OutputItemType>Analyzer</OutputItemType>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>

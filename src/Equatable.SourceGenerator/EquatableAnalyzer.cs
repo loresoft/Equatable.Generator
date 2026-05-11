@@ -143,8 +143,7 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
     private static bool HasEquatableAttribute(INamedTypeSymbol typeSymbol)
     {
         return typeSymbol.GetAttributes().Any(
-            a => IsKnownAttribute(a) && a.AttributeClass?.Name is
-                "EquatableAttribute" or "DataContractEquatableAttribute" or "MessagePackEquatableAttribute");
+            a => IsKnownAttribute(a) && a.AttributeClass?.Name == "EquatableAttribute");
     }
 
     private static bool IsIgnored(IPropertySymbol propertySymbol)
