@@ -56,12 +56,12 @@ public class HashSetEqualityComparer<TValue> : IEqualityComparer<IEnumerable<TVa
         if (obj == null)
             return 0;
 
-        var hashCode = new HashCode();
+        int hashCode = 0;
 
-        // sort to ensure set with different order are the same
-        foreach (var item in obj.OrderBy(s => s))
-            hashCode.Add(item, Comparer);
+        // sum of individual hashes is order-independent without sorting allocations
+        foreach (var item in obj)
+            hashCode += Comparer.GetHashCode(item!);
 
-        return hashCode.ToHashCode();
+        return hashCode;
     }
 }

@@ -14,20 +14,38 @@ public class EquatableGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        RegisterProvider(context,
+            fullyQualifiedMetadataName: "Equatable.Attributes.EquatableAttribute",
+            trackingName: "EquatableAttribute",
+            propertyFilter: IsIncluded);
+
+        RegisterProvider(context,
+            fullyQualifiedMetadataName: "Equatable.Attributes.DataContractEquatableAttribute",
+            trackingName: "DataContractEquatableAttribute",
+            propertyFilter: IsIncludedDataContract);
+
+        RegisterProvider(context,
+            fullyQualifiedMetadataName: "Equatable.Attributes.MessagePackEquatableAttribute",
+            trackingName: "MessagePackEquatableAttribute",
+            propertyFilter: IsIncludedMessagePack);
+    }
+
+    private static void RegisterProvider(
+        IncrementalGeneratorInitializationContext context,
+        string fullyQualifiedMetadataName,
+        string trackingName,
+        Func<IPropertySymbol, bool> propertyFilter)
+    {
         var provider = context.SyntaxProvider
             .ForAttributeWithMetadataName(
-                fullyQualifiedMetadataName: "Equatable.Attributes.EquatableAttribute",
+                fullyQualifiedMetadataName: fullyQualifiedMetadataName,
                 predicate: SyntacticPredicate,
-                transform: SemanticTransform
+                transform: (ctx, ct) => SemanticTransform(ctx, ct, propertyFilter)
             )
-            .Where(static context => context is not null)
-            .WithTrackingName("EquatableAttribute");
+            .Where(static item => item is not null)
+            .WithTrackingName(trackingName);
 
-        // output code
-        var entityClasses = provider
-            .Where(static item => item is not null);
-
-        context.RegisterSourceOutput(entityClasses, Execute);
+        context.RegisterSourceOutput(provider, Execute);
     }
 
 
@@ -49,7 +67,7 @@ public class EquatableGenerator : IIncrementalGenerator
             || (syntaxNode is StructDeclarationSyntax structDeclaration && !structDeclaration.Modifiers.Any(SyntaxKind.StaticKeyword));
     }
 
-    private static EquatableClass? SemanticTransform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
+    private static EquatableClass? SemanticTransform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken, Func<IPropertySymbol, bool> propertyFilter)
     {
         if (context.TargetSymbol is not INamedTypeSymbol targetSymbol)
             return null;
@@ -67,7 +85,7 @@ public class EquatableGenerator : IIncrementalGenerator
         var baseEquals = GetBaseEqualsMethod(targetSymbol);
         var baseEquatable = GetBaseEquatableType(targetSymbol);
 
-        var propertySymbols = GetProperties(targetSymbol, baseHashCode == null && baseEquatable == null);
+        var propertySymbols = GetProperties(targetSymbol, baseHashCode == null && baseEquatable == null, propertyFilter);
 
         var propertyArray = propertySymbols
             .Select(CreateProperty)
@@ -103,7 +121,7 @@ public class EquatableGenerator : IIncrementalGenerator
     }
 
 
-    private static IEnumerable<IPropertySymbol> GetProperties(INamedTypeSymbol targetSymbol, bool includeBaseProperties = true)
+    private static IEnumerable<IPropertySymbol> GetProperties(INamedTypeSymbol targetSymbol, bool includeBaseProperties, Func<IPropertySymbol, bool> propertyFilter)
     {
         var properties = new Dictionary<string, IPropertySymbol>();
 
@@ -116,7 +134,7 @@ public class EquatableGenerator : IIncrementalGenerator
                 .GetMembers()
                 .Where(m => m.Kind == SymbolKind.Property)
                 .OfType<IPropertySymbol>()
-                .Where(IsIncluded)
+                .Where(propertyFilter)
                 .Where(p => !properties.ContainsKey(p.Name));
 
             foreach (var propertySymbol in propertySymbols)
@@ -282,6 +300,36 @@ public class EquatableGenerator : IIncrementalGenerator
         return !propertySymbol.IsIndexer && propertySymbol.DeclaredAccessibility == Accessibility.Public;
     }
 
+    private static bool IsIncludedDataContract(IPropertySymbol propertySymbol)
+    {
+        if (propertySymbol.IsIndexer || propertySymbol.DeclaredAccessibility != Accessibility.Public)
+            return false;
+
+        var attributes = propertySymbol.GetAttributes();
+        if (attributes.Length == 0)
+            return false;
+
+        if (attributes.Any(a => a.AttributeClass is { Name: "IgnoreDataMemberAttribute", ContainingNamespace.Name: "Serialization" }))
+            return false;
+
+        return attributes.Any(a => a.AttributeClass is { Name: "DataMemberAttribute", ContainingNamespace.Name: "Serialization" });
+    }
+
+    private static bool IsIncludedMessagePack(IPropertySymbol propertySymbol)
+    {
+        if (propertySymbol.IsIndexer || propertySymbol.DeclaredAccessibility != Accessibility.Public)
+            return false;
+
+        var attributes = propertySymbol.GetAttributes();
+        if (attributes.Length == 0)
+            return false;
+
+        if (attributes.Any(a => a.AttributeClass is { Name: "IgnoreMemberAttribute", ContainingNamespace.Name: "MessagePack" }))
+            return false;
+
+        return attributes.Any(a => a.AttributeClass is { Name: "KeyAttribute", ContainingNamespace.Name: "MessagePack" });
+    }
+
     private static bool IsKnownAttribute(AttributeData? attribute)
     {
         if (attribute == null)
@@ -334,7 +382,7 @@ public class EquatableGenerator : IIncrementalGenerator
     {
         return targetSymbol is
         {
-            Name: "IDictionary",
+            Name: "IDictionary" or "IReadOnlyDictionary",
             IsGenericType: true,
             TypeArguments.Length: 2,
             TypeParameters.Length: 2,

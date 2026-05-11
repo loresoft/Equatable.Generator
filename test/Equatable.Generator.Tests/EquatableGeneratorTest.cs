@@ -540,6 +540,103 @@ public partial class UserImport
             .ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
+    [Fact]
+    public Task GenerateReadOnlyDictionary()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class MarketInputs
+{
+    [DictionaryEquality]
+    public IReadOnlyDictionary<string, double>? FlatInputs { get; set; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        Assert.Empty(diagnostics);
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateDataContractEquatable()
+    {
+        var source = @"
+using System.Runtime.Serialization;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[DataContractEquatable]
+public partial class OrderDataContract
+{
+    [DataMember(Order = 0)]
+    public int Id { get; set; }
+
+    [DataMember(Order = 1)]
+    public string? Name { get; set; }
+
+    public string? InternalNote { get; set; }
+
+    [IgnoreDataMember]
+    public string? IgnoredField { get; set; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        Assert.Empty(diagnostics);
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateMessagePackEquatable()
+    {
+        var source = @"
+using MessagePack;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[MessagePackEquatable]
+public partial class PricingContract
+{
+    [Key(0)]
+    public int MarketId { get; set; }
+
+    [Key(1)]
+    public double Probability { get; set; }
+
+    [IgnoreMember]
+    public string? DebugInfo { get; set; }
+
+    public string? NotIncluded { get; set; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        Assert.Empty(diagnostics);
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
     private static (ImmutableArray<Diagnostic> Diagnostics, string Output) GetGeneratedOutput<T>(string source)
         where T : IIncrementalGenerator, new()
     {
