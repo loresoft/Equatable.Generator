@@ -58,6 +58,11 @@ public class HashSetEqualityComparer<TValue> : IEqualityComparer<IEnumerable<TVa
 
         int hashCode = 0;
 
+        // Commutative SUM ensures hash is iteration-order independent, consistent with
+        // Equals which uses SetEquals (also order-independent). Previously GetHashCode
+        // used OrderBy + sequential HashCode.Add, which was order-dependent and violated
+        // the contract: two equal sets (same elements, different insertion order) could
+        // produce different hash codes.
         foreach (var item in obj)
             hashCode += Comparer.GetHashCode(item!);
 

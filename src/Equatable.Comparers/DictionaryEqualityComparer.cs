@@ -73,6 +73,11 @@ public class DictionaryEqualityComparer<TKey, TValue> : IEqualityComparer<IDicti
 
         int hashCode = 0;
 
+        // Commutative SUM ensures hash is insertion-order independent, consistent with
+        // Equals which uses TryGetValue (also order-independent). Previously GetHashCode
+        // used OrderBy + sequential HashCode.Add, which was order-dependent and violated
+        // the contract: two equal dictionaries (same keys/values, different insertion order)
+        // would produce different hash codes.
         foreach (var pair in obj)
             hashCode += HashCode.Combine(KeyComparer.GetHashCode(pair.Key!), ValueComparer.GetHashCode(pair.Value!));
 
