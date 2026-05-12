@@ -163,7 +163,7 @@ public class EquatableGenerator : IIncrementalGenerator
             // that need a composed comparer rather than EqualityComparer<TValue>.Default.
             // BuildArrayComparerExpression always returns a non-null expression for arrays
             // (including multi-dimensional, which use MultiDimensionalArrayEqualityComparer).
-            if (comparerType is ComparerTypes.Dictionary or ComparerTypes.HashSet or ComparerTypes.Sequence)
+            if (comparerType is ComparerTypes.Dictionary or ComparerTypes.OrderedDictionary or ComparerTypes.HashSet or ComparerTypes.Sequence)
             {
                 string? expression = propertySymbol.Type switch
                 {
@@ -202,7 +202,7 @@ public class EquatableGenerator : IIncrementalGenerator
         INamedTypeSymbol? enumInterface = IsEnumerable(unwrapped) ? unwrapped
             : unwrapped.AllInterfaces.FirstOrDefault(IsEnumerable);
 
-        if (kind == ComparerTypes.Dictionary && dictInterface != null)
+        if ((kind == ComparerTypes.Dictionary || kind == ComparerTypes.OrderedDictionary) && dictInterface != null)
         {
             var keyType = dictInterface.TypeArguments[0];
             var valueType = dictInterface.TypeArguments[1];
@@ -210,16 +210,32 @@ public class EquatableGenerator : IIncrementalGenerator
             var keyExpr = BuildElementComparerExpression(keyType);
             var valueExpr = BuildElementComparerExpression(valueType);
 
-            // only compose if at least one argument needs a non-default comparer
+            var keyTypeFq = keyType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var valueTypeFq = valueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+            var isReadOnly = IsReadOnlyDictionary(unwrapped) || unwrapped.AllInterfaces.Any(IsReadOnlyDictionary);
+
+            if (kind == ComparerTypes.OrderedDictionary)
+            {
+                // ordered: always emit an explicit comparer so the ordered semantics are enforced,
+                // even when key/value types don't need composition themselves
+                keyExpr ??= $"global::System.Collections.Generic.EqualityComparer<{keyTypeFq}>.Default";
+                valueExpr ??= $"global::System.Collections.Generic.EqualityComparer<{valueTypeFq}>.Default";
+
+                var orderedClass = isReadOnly
+                    ? "global::Equatable.Comparers.OrderedReadOnlyDictionaryEqualityComparer"
+                    : "global::Equatable.Comparers.OrderedDictionaryEqualityComparer";
+
+                return $"new {orderedClass}<{keyTypeFq}, {valueTypeFq}>({keyExpr}, {valueExpr})";
+            }
+
+            // unordered: only compose when at least one argument needs a non-default comparer
             if (keyExpr == null && valueExpr == null)
                 return null;
 
-            var keyTypeFq = keyType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var valueTypeFq = valueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             keyExpr ??= $"global::System.Collections.Generic.EqualityComparer<{keyTypeFq}>.Default";
             valueExpr ??= $"global::System.Collections.Generic.EqualityComparer<{valueTypeFq}>.Default";
 
-            var isReadOnly = IsReadOnlyDictionary(unwrapped) || unwrapped.AllInterfaces.Any(IsReadOnlyDictionary);
             var comparerClass = isReadOnly
                 ? "global::Equatable.Comparers.ReadOnlyDictionaryEqualityComparer"
                 : "global::Equatable.Comparers.DictionaryEqualityComparer";
@@ -368,7 +384,7 @@ public class EquatableGenerator : IIncrementalGenerator
         if (comparerType == ComparerTypes.String)
             return IsString(propertySymbol.Type);
 
-        if (comparerType == ComparerTypes.Dictionary)
+        if (comparerType == ComparerTypes.Dictionary || comparerType == ComparerTypes.OrderedDictionary)
             return (propertySymbol.Type is INamedTypeSymbol nt && IsDictionary(nt))
                 || propertySymbol.Type.AllInterfaces.Any(IsDictionary);
 
@@ -394,7 +410,7 @@ public class EquatableGenerator : IIncrementalGenerator
 
         return className switch
         {
-            "DictionaryEqualityAttribute" => (ComparerTypes.Dictionary, null, null),
+            "DictionaryEqualityAttribute" => GetDictionaryComparer(attribute),
             "HashSetEqualityAttribute" => (ComparerTypes.HashSet, null, null),
             "ReferenceEqualityAttribute" => (ComparerTypes.Reference, null, null),
             "SequenceEqualityAttribute" => (ComparerTypes.Sequence, null, null),
@@ -402,6 +418,24 @@ public class EquatableGenerator : IIncrementalGenerator
             "EqualityComparerAttribute" => GetEqualityComparer(attribute),
             _ => (null, null, null),
         };
+    }
+
+    private static (ComparerTypes? comparerType, string? comparerName, string? comparerInstance) GetDictionaryComparer(AttributeData? attribute)
+    {
+        if (attribute == null)
+            return (ComparerTypes.Dictionary, null, null);
+
+        // named arg: [DictionaryEquality(ordered: true)]
+        var namedArg = attribute.NamedArguments.FirstOrDefault(a => a.Key == "Ordered");
+        if (namedArg.Key != null && namedArg.Value.Value is bool namedOrdered && namedOrdered)
+            return (ComparerTypes.OrderedDictionary, null, null);
+
+        // positional arg: [DictionaryEquality(true)]
+        if (attribute.ConstructorArguments.Length > 0 &&
+            attribute.ConstructorArguments[0].Value is bool positionalOrdered && positionalOrdered)
+            return (ComparerTypes.OrderedDictionary, null, null);
+
+        return (ComparerTypes.Dictionary, null, null);
     }
 
     private static (ComparerTypes? comparerType, string? comparerName, string? comparerInstance) GetStringComparer(AttributeData? attribute)
