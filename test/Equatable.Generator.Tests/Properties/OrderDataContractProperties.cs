@@ -12,7 +12,7 @@ public class OrderDataContractProperties
     public Property Reflexivity(int id, string? name)
     {
         var o = new OrderDataContract { Id = id, Name = name };
-        return o.Equals(o).ToProperty();
+        return Prop.ToProperty(o.Equals(o));
     }
 
     [Property]
@@ -20,7 +20,7 @@ public class OrderDataContractProperties
     {
         var a = new OrderDataContract { Id = id1, Name = name1 };
         var b = new OrderDataContract { Id = id2, Name = name2 };
-        return (a.Equals(b) == b.Equals(a)).ToProperty();
+        return Prop.ToProperty(a.Equals(b) == b.Equals(a));
     }
 
     [Property]
@@ -28,7 +28,7 @@ public class OrderDataContractProperties
     {
         var a = new OrderDataContract { Id = id, Name = name };
         var b = new OrderDataContract { Id = id, Name = name };
-        return (a.Equals(b) && a.GetHashCode() == b.GetHashCode()).ToProperty();
+        return Prop.ToProperty(a.Equals(b) && a.GetHashCode() == b.GetHashCode());
     }
 
     [Property]
@@ -37,7 +37,7 @@ public class OrderDataContractProperties
         // InternalNote (no [DataMember]) and IgnoredField ([IgnoreDataMember]) must not affect equality
         var a = new OrderDataContract { Id = id, Name = name, InternalNote = note1, IgnoredField = ignored1 };
         var b = new OrderDataContract { Id = id, Name = name, InternalNote = note2, IgnoredField = ignored2 };
-        return a.Equals(b).ToProperty();
+        return Prop.ToProperty(a.Equals(b));
     }
 
     [Property]
@@ -45,28 +45,28 @@ public class OrderDataContractProperties
     {
         var a = new OrderDataContract { Id = id, Name = name, InternalNote = note1 };
         var b = new OrderDataContract { Id = id, Name = name, InternalNote = note2 };
-        return (a.GetHashCode() == b.GetHashCode()).ToProperty();
+        return Prop.ToProperty(a.GetHashCode() == b.GetHashCode());
     }
 
     [Property]
     public Property DifferentIdNotEqual(string? name, int id1, int id2)
     {
         if (id1 == id2)
-            return true.ToProperty().When(true);
+            return Prop.When(true, true);
 
         var a = new OrderDataContract { Id = id1, Name = name };
         var b = new OrderDataContract { Id = id2, Name = name };
-        return (!a.Equals(b)).ToProperty();
+        return Prop.ToProperty(!a.Equals(b));
     }
 
     [Property]
     public Property DifferentNameNotEqual(int id, string name1, string name2)
     {
         if (name1 == name2)
-            return true.ToProperty().When(true);
+            return Prop.When(true, true);
 
         var a = new OrderDataContract { Id = id, Name = name1 };
         var b = new OrderDataContract { Id = id, Name = name2 };
-        return (!a.Equals(b)).ToProperty();
+        return Prop.ToProperty(!a.Equals(b));
     }
 }

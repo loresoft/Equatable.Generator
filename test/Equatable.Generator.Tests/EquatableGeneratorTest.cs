@@ -970,6 +970,30 @@ public partial class Container
     }
 
     [Fact]
+    public Task GenerateSequentialDictionaryEquality()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, int>? Entries { get; set; }
+
+    [DictionaryEquality(sequential: true)]
+    public IReadOnlyDictionary<string, int>? ReadOnlyEntries { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
     public Task GenerateIEnumerableSequenceEquality()
     {
         var source = @"

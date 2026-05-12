@@ -58,7 +58,6 @@ public class HashSetEqualityComparer<TValue> : IEqualityComparer<IEnumerable<TVa
 
         int hashCode = 0;
 
-        // sum of individual hashes is order-independent without sorting allocations
         foreach (var item in obj)
             hashCode += Comparer.GetHashCode(item!);
 

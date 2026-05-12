@@ -121,7 +121,6 @@ namespace Equatable.Entities
 
                 int hashCode = 0;
 
-                // sum of per-pair hashes is order-independent without sorting allocations
                 foreach (var item in items)
                     hashCode += global::System.HashCode.Combine(
                         global::System.Collections.Generic.EqualityComparer<TKey>.Default.GetHashCode(item.Key!),
@@ -137,7 +136,6 @@ namespace Equatable.Entities
 
                 int hashCode = 0;
 
-                // sum of individual hashes is order-independent without sorting allocations
                 foreach (var item in items)
                     hashCode += global::System.Collections.Generic.EqualityComparer<T>.Default.GetHashCode(item!);
 

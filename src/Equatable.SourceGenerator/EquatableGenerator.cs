@@ -213,7 +213,8 @@ public class EquatableGenerator : IIncrementalGenerator
             var keyTypeFq = keyType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             var valueTypeFq = valueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
-            var isReadOnly = IsReadOnlyDictionary(unwrapped) || unwrapped.AllInterfaces.Any(IsReadOnlyDictionary);
+            var isReadOnly = IsReadOnlyDictionary(unwrapped)
+                || (IsDictionary(unwrapped) is false && unwrapped.AllInterfaces.Any(IsReadOnlyDictionary));
 
             if (kind == ComparerTypes.OrderedDictionary)
             {
@@ -289,7 +290,7 @@ public class EquatableGenerator : IIncrementalGenerator
         if (asDictInterface != null)
         {
             var isReadOnly = IsReadOnlyDictionary(named)
-                || named.AllInterfaces.Any(IsReadOnlyDictionary);
+                || (IsDictionary(named) is false && named.AllInterfaces.Any(IsReadOnlyDictionary));
             return BuildDictComparerExpression(asDictInterface, isReadOnly, visited);
         }
 
@@ -425,14 +426,14 @@ public class EquatableGenerator : IIncrementalGenerator
         if (attribute == null)
             return (ComparerTypes.Dictionary, null, null);
 
-        // named arg: [DictionaryEquality(ordered: true)]
-        var namedArg = attribute.NamedArguments.FirstOrDefault(a => a.Key == "Ordered");
-        if (namedArg.Key != null && namedArg.Value.Value is bool namedOrdered && namedOrdered)
+        // named arg: [DictionaryEquality(sequential: true)]
+        var namedArg = attribute.NamedArguments.FirstOrDefault(a => a.Key == "Sequential");
+        if (namedArg.Key != null && namedArg.Value.Value is bool namedSequential && namedSequential)
             return (ComparerTypes.OrderedDictionary, null, null);
 
         // positional arg: [DictionaryEquality(true)]
         if (attribute.ConstructorArguments.Length > 0 &&
-            attribute.ConstructorArguments[0].Value is bool positionalOrdered && positionalOrdered)
+            attribute.ConstructorArguments[0].Value is bool positionalSequential && positionalSequential)
             return (ComparerTypes.OrderedDictionary, null, null);
 
         return (ComparerTypes.Dictionary, null, null);

@@ -73,7 +73,6 @@ public class DictionaryEqualityComparer<TKey, TValue> : IEqualityComparer<IDicti
 
         int hashCode = 0;
 
-        // sum of per-pair hashes is order-independent without sorting allocations
         foreach (var pair in obj)
             hashCode += HashCode.Combine(KeyComparer.GetHashCode(pair.Key!), ValueComparer.GetHashCode(pair.Value!));
 

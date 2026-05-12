@@ -6,6 +6,11 @@ namespace Equatable.Generator.Tests;
 /// Demonstrates and verifies the order-independent hash code algorithm used by
 /// DictionaryEqualityComparer and ReadOnlyDictionaryEqualityComparer.
 ///
+/// The hash/equals contract requires: if Equals(x, y) then GetHashCode(x) == GetHashCode(y).
+/// DictionaryEquals uses TryGetValue (order-independent), so GetHashCode MUST also be
+/// order-independent — otherwise two equal dictionaries in different insertion order would
+/// produce different hash codes and violate the contract.
+///
 /// The implementation sums HashCode.Combine(key, value) over every entry.
 /// Addition is commutative, so the total is the same regardless of insertion order:
 ///

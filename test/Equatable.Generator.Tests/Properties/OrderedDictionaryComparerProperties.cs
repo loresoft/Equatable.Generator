@@ -1,10 +1,13 @@
+using System.Collections.Generic;
+using System.Linq;
 using Equatable.Comparers;
 
 namespace Equatable.Generator.Tests.Properties;
 
-public class DictionaryComparerProperties
+public class OrderedDictionaryComparerProperties
 {
-    private static readonly DictionaryEqualityComparer<string, int> Comparer = DictionaryEqualityComparer<string, int>.Default;
+    private static readonly OrderedDictionaryEqualityComparer<string, int> Comparer
+        = OrderedDictionaryEqualityComparer<string, int>.Default;
 
     [Property]
     public Property Reflexivity(Dictionary<string, int> dict)
@@ -26,14 +29,14 @@ public class DictionaryComparerProperties
     }
 
     [Property]
-    public Property EqualDictionariesHaveSameHashCode(Dictionary<string, int> dict)
+    public Property EqualImpliesSameHashCode(Dictionary<string, int> dict)
     {
-        var copy = new Dictionary<string, int>(dict);
-        return Prop.ToProperty(Comparer.Equals(dict, copy) && Comparer.GetHashCode(dict) == Comparer.GetHashCode(copy));
+        var reversed = new Dictionary<string, int>(dict.Reverse());
+        return Prop.ToProperty(Comparer.Equals(dict, reversed) && Comparer.GetHashCode(dict) == Comparer.GetHashCode(reversed));
     }
 
     [Property]
-    public Property DifferentValueProducesDifferentHash(Dictionary<string, int> dict, string key, int v1, int v2)
+    public Property DifferentValueMakesNotEqual(Dictionary<string, int> dict, string key, int v1, int v2)
     {
         if (v1 == v2)
             return Prop.When(true, true);
@@ -41,7 +44,6 @@ public class DictionaryComparerProperties
         var a = new Dictionary<string, int>(dict) { [key] = v1 };
         var b = new Dictionary<string, int>(dict) { [key] = v2 };
 
-        // different values must NOT be equal
         return Prop.ToProperty(!Comparer.Equals(a, b));
     }
 }

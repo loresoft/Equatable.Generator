@@ -15,11 +15,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Properties\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="coverlet.MTP" />
+    <PackageReference Include="FsCheck.Xunit.v3" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="Verify.XunitV3" />
     <PackageReference Include="xunit.v3.mtp-v2" />
@@ -47,6 +44,9 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="FsCheck" />
+    <Using Include="FsCheck.Fluent" />
+    <Using Include="FsCheck.Xunit" />
   </ItemGroup>
 
 </Project>

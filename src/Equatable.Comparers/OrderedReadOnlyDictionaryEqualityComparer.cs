@@ -2,7 +2,7 @@ namespace Equatable.Comparers;
 
 /// <summary>
 /// Order-sensitive <see cref="IReadOnlyDictionary{TKey, TValue}"/> equality comparer.
-/// Two dictionaries are equal only if they contain the same key/value pairs in the same insertion order.
+/// Two dictionaries are equal only if they contain the same key/value pairs in the same key-sorted order.
 /// </summary>
 public class OrderedReadOnlyDictionaryEqualityComparer<TKey, TValue> : IEqualityComparer<IReadOnlyDictionary<TKey, TValue>>
 {
@@ -17,10 +17,16 @@ public class OrderedReadOnlyDictionaryEqualityComparer<TKey, TValue> : IEquality
     {
         KeyComparer = keyComparer ?? throw new ArgumentNullException(nameof(keyComparer));
         ValueComparer = valueComparer ?? throw new ArgumentNullException(nameof(valueComparer));
+        // Prefer IComparer<TKey> from keyComparer for sort; fall back to a hash-tiebreaker
+        // to guarantee strict total order (dictionary keys are unique, so ties indicate
+        // a sort comparer inconsistent with key equality — hash tiebreaker fixes this).
+        KeySortComparer = keyComparer as IComparer<TKey>
+            ?? new HashTiebreakerComparer(keyComparer);
     }
 
     public IEqualityComparer<TKey> KeyComparer { get; }
     public IEqualityComparer<TValue> ValueComparer { get; }
+    private IComparer<TKey> KeySortComparer { get; }
 
     /// <inheritdoc />
     public bool Equals(IReadOnlyDictionary<TKey, TValue>? x, IReadOnlyDictionary<TKey, TValue>? y)
@@ -31,7 +37,7 @@ public class OrderedReadOnlyDictionaryEqualityComparer<TKey, TValue> : IEquality
         if (x is null || y is null)
             return false;
 
-        return x.SequenceEqual(y, PairComparer);
+        return x.OrderBy(p => p.Key, KeySortComparer).SequenceEqual(y.OrderBy(p => p.Key, KeySortComparer), PairComparer);
     }
 
     /// <inheritdoc />
@@ -42,7 +48,7 @@ public class OrderedReadOnlyDictionaryEqualityComparer<TKey, TValue> : IEquality
 
         var hashCode = new HashCode();
 
-        foreach (var pair in obj)
+        foreach (var pair in obj.OrderBy(p => p.Key, KeySortComparer))
         {
             hashCode.Add(pair.Key, KeyComparer);
             hashCode.Add(pair.Value, ValueComparer);
@@ -61,5 +67,22 @@ public class OrderedReadOnlyDictionaryEqualityComparer<TKey, TValue> : IEquality
 
         public int GetHashCode(KeyValuePair<TKey, TValue> obj) =>
             HashCode.Combine(keyComparer.GetHashCode(obj.Key!), valueComparer.GetHashCode(obj.Value!));
+    }
+
+    // Provides a strict total order for keys that have no natural IComparer<TKey>,
+    // using hash code as tiebreaker when the natural comparer returns 0 for distinct keys.
+    private sealed class HashTiebreakerComparer(IEqualityComparer<TKey> equalityComparer) : IComparer<TKey>
+    {
+        private static readonly IComparer<TKey> _natural = Comparer<TKey>.Default;
+
+        public int Compare(TKey? x, TKey? y)
+        {
+            int cmp = _natural.Compare(x, y);
+            if (cmp != 0) return cmp;
+            // Natural comparer considers them equal; break tie by hash code
+            int hx = x is null ? 0 : equalityComparer.GetHashCode(x);
+            int hy = y is null ? 0 : equalityComparer.GetHashCode(y);
+            return hx.CompareTo(hy);
+        }
     }
 }
