@@ -144,7 +144,7 @@ public class EquatableGenerator : IIncrementalGenerator
         var propertyType = propertySymbol.Type.ToDisplayString(FullyQualifiedNullableFormat);
         var propertyName = propertySymbol.Name;
         var isValueType = propertySymbol.Type.IsValueType;
-        var defaultComparer = isValueType ? ComparerTypes.ValueType : ComparerTypes.Default;
+        var defaultComparer = isValueType && HasEqualityOperator(propertySymbol.Type) ? ComparerTypes.ValueType : ComparerTypes.Default;
 
         // look for an explicit equality attribute
         var attributes = propertySymbol.GetAttributes();
@@ -483,6 +483,21 @@ public class EquatableGenerator : IIncrementalGenerator
             }
         };
 
+    }
+
+    private static bool HasEqualityOperator(ITypeSymbol typeSymbol)
+    {
+        // For Nullable<T>, check the underlying type T
+        var typeToCheck = typeSymbol is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
+            ? nullable.TypeArguments[0]
+            : typeSymbol;
+
+        // Primitive types and enums always support ==
+        if (typeToCheck.SpecialType != SpecialType.None || typeToCheck.TypeKind == TypeKind.Enum)
+            return true;
+
+        // Check for user-defined == operator
+        return typeToCheck.GetMembers("op_Equality").Any();
     }
 
     private static bool IsValueType(INamedTypeSymbol targetSymbol)
