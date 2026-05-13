@@ -207,6 +207,34 @@ public HashSet<string>? OrderedSet { get; set; } // SequenceEquality (explicit o
 
 ---
 
+## Multi-dimensional arrays
+
+`T[,]`, `T[,,]`, and higher-rank arrays are supported via `MultiDimensionalArrayEqualityComparer<T>`. Use `[SequenceEquality]` to opt in:
+
+```csharp
+[SequenceEquality]
+public int[,] Grid { get; set; }
+
+[SequenceEquality]
+public double[,,] Cube { get; set; }
+```
+
+Two arrays are equal when:
+1. They have the **same rank** (`int[,]` ≠ `int[,,]`)
+2. Every **dimension length** matches (`[2,3]` ≠ `[3,2]`)
+3. Every **element** is equal in row-major order
+
+```csharp
+var a = new int[,] { { 1, 2 }, { 3, 4 } };
+var b = new int[,] { { 1, 2 }, { 3, 4 } };
+// a == b ✓
+
+var c = new int[,] { { 1, 3 }, { 2, 4 } };  // transposed
+// a != c ✓  (row-major order is sensitive to transposition)
+```
+
+---
+
 ## `[EqualityComparer]` — fully custom comparer
 
 When no built-in attribute fits, write your own `IEqualityComparer<T>`:
