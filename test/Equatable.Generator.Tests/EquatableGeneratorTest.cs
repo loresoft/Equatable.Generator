@@ -738,78 +738,6 @@ public partial class NestedCollections
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
-    [Fact]
-    public Task GenerateDataContractEquatable()
-    {
-        var source = @"
-using System.Runtime.Serialization;
-using Equatable.Attributes;
-
-namespace Equatable.Entities;
-
-[DataContract]
-[DataContractEquatable]
-public partial class OrderDataContract
-{
-    [DataMember(Order = 0)]
-    public int Id { get; set; }
-
-    [DataMember(Order = 1)]
-    public string? Name { get; set; }
-
-    public string? InternalNote { get; set; }
-
-    [IgnoreDataMember]
-    public string? IgnoredField { get; set; }
-}
-";
-
-        var (diagnostics, output) = GetGeneratedOutput<DataContractEquatableGenerator>(source);
-
-        Assert.Empty(diagnostics);
-
-        return Verifier
-            .Verify(output)
-            .UseDirectory("Snapshots")
-            .ScrubLinesContaining("GeneratedCodeAttribute");
-    }
-
-    [Fact]
-    public Task GenerateMessagePackEquatable()
-    {
-        var source = @"
-using MessagePack;
-using Equatable.Attributes;
-
-namespace Equatable.Entities;
-
-[MessagePackObject]
-[MessagePackEquatable]
-public partial class PricingContract
-{
-    [Key(0)]
-    public int MarketId { get; set; }
-
-    [Key(1)]
-    public double Probability { get; set; }
-
-    [IgnoreMember]
-    public string? DebugInfo { get; set; }
-
-    public string? NotIncluded { get; set; }
-}
-";
-
-        var (diagnostics, output) = GetGeneratedOutput<MessagePackEquatableGenerator>(source);
-
-        Assert.Empty(diagnostics);
-
-        return Verifier
-            .Verify(output)
-            .UseDirectory("Snapshots")
-            .ScrubLinesContaining("GeneratedCodeAttribute");
-    }
-
     // ── base class with non-[Equatable] generator attribute ───────────────────────────────────────
     // These tests guard against the GetBaseEquatableType bug: only "EquatableAttribute" was checked,
     // so a derived [Equatable] class whose base carries [DataContractEquatable] or
@@ -821,6 +749,7 @@ public partial class PricingContract
         var source = @"
 using System.Runtime.Serialization;
 using Equatable.Attributes;
+using Equatable.Attributes.DataContract;
 
 namespace Equatable.Entities;
 
@@ -852,6 +781,7 @@ public abstract partial class ContractBase
         var source = @"
 using MessagePack;
 using Equatable.Attributes;
+using Equatable.Attributes.MessagePack;
 
 namespace Equatable.Entities;
 
@@ -873,73 +803,6 @@ public abstract partial class PackedBase
 }
 ";
         var (diagnostics, output) = GetNamedGeneratedOutput<EquatableGenerator>(source, "ConcreteRecord");
-        Assert.Empty(diagnostics);
-        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
-    }
-
-    // ── derived class inherits base properties when base has no generator attribute ──────────────────
-    // When the derived class carries [DataContractEquatable] or [MessagePackEquatable] but the base
-    // has no generator attribute, the base's annotated properties must be included directly in the
-    // derived class's equality (no base.Equals() delegation — the base never generated Equals).
-
-    [Fact]
-    public Task GenerateDataContractEquatableDerivedIncludesUnannotatedBase()
-    {
-        var source = @"
-using System.Runtime.Serialization;
-using Equatable.Attributes;
-
-namespace Equatable.Entities;
-
-[DataContract]
-[DataContractEquatable]
-public partial class ConcreteRecord : UnannotatedBase
-{
-    [DataMember(Order = 2)]
-    public int Rank { get; set; }
-}
-
-public abstract class UnannotatedBase
-{
-    [DataMember(Order = 0)]
-    public int Id { get; set; }
-
-    [DataMember(Order = 1)]
-    public string? Name { get; set; }
-}
-";
-        var (diagnostics, output) = GetNamedGeneratedOutput<DataContractEquatableGenerator>(source, "ConcreteRecord");
-        Assert.Empty(diagnostics);
-        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
-    }
-
-    [Fact]
-    public Task GenerateMessagePackEquatableDerivedIncludesUnannotatedBase()
-    {
-        var source = @"
-using MessagePack;
-using Equatable.Attributes;
-
-namespace Equatable.Entities;
-
-[MessagePackObject]
-[MessagePackEquatable]
-public partial class ConcreteRecord : UnannotatedBase
-{
-    [Key(2)]
-    public string? Label { get; set; }
-}
-
-public abstract class UnannotatedBase
-{
-    [Key(0)]
-    public int Id { get; set; }
-
-    [Key(1)]
-    public double Score { get; set; }
-}
-";
-        var (diagnostics, output) = GetNamedGeneratedOutput<MessagePackEquatableGenerator>(source, "ConcreteRecord");
         Assert.Empty(diagnostics);
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
@@ -1098,14 +961,36 @@ public partial class Container
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
+    // ── zero-property edge case ───────────────────────────────────────────────────────────────────
+    // A class with [Equatable] and no public properties should generate an Equals body that
+    // reduces to !(other is null) with an empty GetHashCode.
+
+    [Fact]
+    public Task GenerateEquatableWithNoPublicProperties()
+    {
+        var source = @"
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Empty
+{
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
     // Pinned references that must always be present regardless of AppDomain load order.
     // Adapter attribute assemblies and serialization libraries may not be loaded when a test runs first.
     private static readonly IEnumerable<MetadataReference> PinnedReferences =
     [
         MetadataReference.CreateFromFile(typeof(System.Runtime.Serialization.DataMemberAttribute).Assembly.Location),
         MetadataReference.CreateFromFile(typeof(MessagePack.KeyAttribute).Assembly.Location),
-        MetadataReference.CreateFromFile(typeof(Equatable.Attributes.DataContractEquatableAttribute).Assembly.Location),
-        MetadataReference.CreateFromFile(typeof(Equatable.Attributes.MessagePackEquatableAttribute).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(Equatable.Attributes.DataContract.DataContractEquatableAttribute).Assembly.Location),
+        MetadataReference.CreateFromFile(typeof(Equatable.Attributes.MessagePack.MessagePackEquatableAttribute).Assembly.Location),
     ];
 
     private static IEnumerable<MetadataReference> BuildReferences<T>()

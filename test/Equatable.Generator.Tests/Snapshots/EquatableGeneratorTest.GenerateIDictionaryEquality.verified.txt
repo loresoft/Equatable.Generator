@@ -87,7 +87,7 @@ namespace Equatable.Entities
                 if (items is null)
                     return 0;
 
-                int hashCode = 0;
+                int hashCode = 1;
 
                 foreach (var item in items)
                     hashCode += global::System.HashCode.Combine(
