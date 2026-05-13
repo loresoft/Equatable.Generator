@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using Equatable.Attributes;
+using Equatable.Attributes.DataContract;
 
 namespace Equatable.Entities;
 

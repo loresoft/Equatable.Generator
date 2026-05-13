@@ -1,4 +1,4 @@
-using Equatable.Attributes;
+using Equatable.Attributes.MessagePack;
 using MessagePack;
 
 namespace Equatable.Entities;
