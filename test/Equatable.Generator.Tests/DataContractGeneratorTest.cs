@@ -246,6 +246,66 @@ public partial class AllIgnored
     }
 
     [Fact]
+    public Task GenerateDataContractEquatableWithHashSetEqualityOnListAndArray()
+    {
+        var source = @"
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Equatable.Attributes;
+using Equatable.Attributes.DataContract;
+
+namespace Equatable.Entities;
+
+[DataContract]
+[DataContractEquatable]
+public partial class HashSetOverrideContract
+{
+    [DataMember(Order = 0)]
+    public int Id { get; set; }
+
+    [DataMember(Order = 1)]
+    [HashSetEquality]
+    public List<string>? Tags { get; set; }
+
+    [DataMember(Order = 2)]
+    [HashSetEquality]
+    public int[]? Codes { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<DataContractEquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateDataContractEquatableWithSequenceEqualityOnHashSet()
+    {
+        var source = @"
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Equatable.Attributes;
+using Equatable.Attributes.DataContract;
+
+namespace Equatable.Entities;
+
+[DataContract]
+[DataContractEquatable]
+public partial class SequenceOverrideContract
+{
+    [DataMember(Order = 0)]
+    public int Id { get; set; }
+
+    [DataMember(Order = 1)]
+    [SequenceEquality]
+    public HashSet<string>? Tags { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<DataContractEquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
     public Task GenerateDataContractEquatableWithSequentialNestedDictPropagation()
     {
         var source = @"

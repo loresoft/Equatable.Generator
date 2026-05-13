@@ -246,6 +246,66 @@ public partial class AllIgnored
     }
 
     [Fact]
+    public Task GenerateMessagePackEquatableWithHashSetEqualityOnListAndArray()
+    {
+        var source = @"
+using System.Collections.Generic;
+using MessagePack;
+using Equatable.Attributes;
+using Equatable.Attributes.MessagePack;
+
+namespace Equatable.Entities;
+
+[MessagePackObject]
+[MessagePackEquatable]
+public partial class HashSetOverrideContract
+{
+    [Key(0)]
+    public int Id { get; set; }
+
+    [Key(1)]
+    [HashSetEquality]
+    public List<string>? Tags { get; set; }
+
+    [Key(2)]
+    [HashSetEquality]
+    public int[]? Codes { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<MessagePackEquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateMessagePackEquatableWithSequenceEqualityOnHashSet()
+    {
+        var source = @"
+using System.Collections.Generic;
+using MessagePack;
+using Equatable.Attributes;
+using Equatable.Attributes.MessagePack;
+
+namespace Equatable.Entities;
+
+[MessagePackObject]
+[MessagePackEquatable]
+public partial class SequenceOverrideContract
+{
+    [Key(0)]
+    public int Id { get; set; }
+
+    [Key(1)]
+    [SequenceEquality]
+    public HashSet<string>? Tags { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<MessagePackEquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
     public Task GenerateMessagePackEquatableWithSequentialNestedDictPropagation()
     {
         var source = @"

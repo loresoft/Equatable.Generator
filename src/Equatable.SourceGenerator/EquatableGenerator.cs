@@ -169,6 +169,8 @@ public class EquatableGenerator : IIncrementalGenerator
                 string? expression = propertySymbol.Type switch
                 {
                     INamedTypeSymbol namedType => BuildCollectionComparerExpression(namedType, comparerType.Value),
+                    IArrayTypeSymbol arrayType when comparerType == ComparerTypes.HashSet
+                        => BuildHashSetArrayComparerExpression(arrayType),
                     IArrayTypeSymbol arrayType => BuildArrayComparerExpression(arrayType),
                     _ => null
                 };
@@ -452,6 +454,17 @@ public class EquatableGenerator : IIncrementalGenerator
         return $"global::Equatable.Comparers.SequenceEqualityComparer<{elementTypeFq}>.Default";
     }
 
+    private static string BuildHashSetArrayComparerExpression(IArrayTypeSymbol arrayType)
+    {
+        var elementType = arrayType.ElementType;
+        var elementTypeFq = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var innerExpr = BuildElementComparerExpression(elementType);
+
+        if (innerExpr != null)
+            return $"new global::Equatable.Comparers.HashSetEqualityComparer<{elementTypeFq}>({innerExpr})";
+        return $"global::Equatable.Comparers.HashSetEqualityComparer<{elementTypeFq}>.Default";
+    }
+
     private static bool IsReadOnlyDictionary(INamedTypeSymbol targetSymbol)
     {
         return targetSymbol is
@@ -485,7 +498,8 @@ public class EquatableGenerator : IIncrementalGenerator
                 || propertySymbol.Type.AllInterfaces.Any(IsDictionary);
 
         if (comparerType == ComparerTypes.HashSet)
-            return (propertySymbol.Type is INamedTypeSymbol ntHs && IsEnumerable(ntHs))
+            return propertySymbol.Type is IArrayTypeSymbol { Rank: 1 }
+                || (propertySymbol.Type is INamedTypeSymbol ntHs && IsEnumerable(ntHs))
                 || propertySymbol.Type.AllInterfaces.Any(IsEnumerable);
 
         if (comparerType == ComparerTypes.Sequence)

@@ -984,6 +984,54 @@ public partial class Empty
     }
 
     [Fact]
+    public Task GenerateHashSetEqualityOnListAndArray()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    /// List is normally order-sensitive; [HashSetEquality] makes it order-insensitive.
+    [HashSetEquality]
+    public List<string>? Tags { get; set; }
+
+    /// Array is normally order-sensitive; [HashSetEquality] makes it order-insensitive.
+    [HashSetEquality]
+    public int[]? Codes { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateSequenceEqualityOnHashSet()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    /// HashSet is normally order-insensitive; [SequenceEquality] makes it order-sensitive.
+    [SequenceEquality]
+    public HashSet<string>? Tags { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
     public Task GenerateSequentialDictionaryEquality_NestedDictPropagatesOrderedComparer()
     {
         var source = @"
