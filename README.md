@@ -106,6 +106,8 @@ public partial class LiveScore
 
 **Default for:** `List<T>`, `T[]` — no attribute needed on these types.
 
+**Supported types:** any `IEnumerable<T>` — `List<T>`, `T[]`, `ICollection<T>`, `IReadOnlyList<T>`, `IEnumerable<T>`, `HashSet<T>` (via override), and more.
+
 ```csharp
 public List<string>? Tracks { get; set; }   // SequenceEquality by default
 public int[]? Scores { get; set; }           // SequenceEquality by default
@@ -113,8 +115,6 @@ public int[]? Scores { get; set; }           // SequenceEquality by default
 
 `["A","B","C"]` equals `["A","B","C"]` ✓  
 `["A","B","C"]` does NOT equal `["C","B","A"]` ✓
-
-Also works on `IEnumerable<T>` and any sequence type when the attribute is applied explicitly.
 
 **Direction override:** apply to `HashSet<T>` to force order-sensitive comparison on a normally unordered set.
 
@@ -128,6 +128,8 @@ public HashSet<string>? OrderedTags { get; set; }  // override: order now matter
 ### `[HashSetEquality]` — order does not matter
 
 **Default for:** `HashSet<T>` — no attribute needed on plain hash sets.
+
+**Supported types:** any `IEnumerable<T>` — `HashSet<T>`, `ISet<T>`, `IReadOnlySet<T>`, `List<T>`, `T[]` (via override), and more. When the value implements `ISet<T>`, `SetEquals` is called directly (fast path). Otherwise a temporary `HashSet<T>` is constructed for the comparison.
 
 ```csharp
 public HashSet<string>? Roles { get; set; }  // HashSetEquality by default
@@ -148,6 +150,8 @@ public List<string>? PermissionCodes { get; set; }  // override: order no longer
 
 **Default for:** `Dictionary<K,V>` — no attribute needed on plain dictionaries.
 
+**Supported types:** any `IReadOnlyDictionary<K,V>` — `Dictionary<K,V>`, `IReadOnlyDictionary<K,V>`, `SortedDictionary<K,V>`, `ConcurrentDictionary<K,V>`, and more.
+
 ```csharp
 public Dictionary<string, double>? Prices { get; set; }  // DictionaryEquality by default
 ```
@@ -157,6 +161,8 @@ public Dictionary<string, double>? Prices { get; set; }  // DictionaryEquality b
 ### `[DictionaryEquality(sequential: true)]` — key-sorted comparison
 
 Both sides are sorted by key before comparison. Insertion order is still irrelevant, but the result is deterministic — useful for snapshots and logs.
+
+**Supported types:** same as `[DictionaryEquality]` — any `IReadOnlyDictionary<K,V>`.
 
 ```csharp
 [DictionaryEquality(sequential: true)]
@@ -209,7 +215,9 @@ public HashSet<string>? OrderedSet { get; set; } // SequenceEquality (explicit o
 
 ## Multi-dimensional arrays
 
-`T[,]`, `T[,,]`, and higher-rank arrays are supported via `MultiDimensionalArrayEqualityComparer<T>`. Use `[SequenceEquality]` to opt in:
+`T[,]`, `T[,,]`, and higher-rank arrays are supported via `MultiDimensionalArrayEqualityComparer<T>`. Use `[SequenceEquality]` to opt in.
+
+**Supported types:** any `System.Array` with rank ≥ 2 — `T[,]`, `T[,,]`, and beyond. Single-dimensional `T[]` uses the standard `[SequenceEquality]` path instead.
 
 ```csharp
 [SequenceEquality]
