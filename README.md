@@ -165,18 +165,24 @@ public Dictionary<string, int>? RankByRegion { get; set; }
 
 ---
 
-## Comparer propagation into nested collections
+## Nested collections
 
-Annotate the **outer property once** — the chosen comparer kind propagates automatically into all nested levels.
+Every collection attribute works on nested collection types without any extra annotation. The outer attribute propagates its intent inward; inner types that have their own default use it.
+
+### Propagation rules
+
+| Outer annotation | Inner `Dictionary<K,V>` | Inner `List<T>` / `T[]` | Inner `HashSet<T>` |
+|---|---|---|---|
+| `[DictionaryEquality]` | `DictionaryEquality` | `SequenceEquality` | `HashSetEquality` |
+| `[DictionaryEquality(sequential:true)]` | `DictionaryEquality(sequential:true)` | `SequenceEquality` | `HashSetEquality` |
+| `[SequenceEquality]` | `DictionaryEquality` | `SequenceEquality` | `HashSetEquality` |
 
 ```csharp
-// outer dict → key-sorted
-// inner dict → key-sorted (propagated automatically)
+// outer dict → key-sorted; inner dict → key-sorted (propagated)
 [DictionaryEquality(sequential: true)]
-public Dictionary<string, Dictionary<string, int>>? ScoresByRegionAndTeam { get; set; }
+public Dictionary<string, Dictionary<string, int>>? ByRegionAndTeam { get; set; }
 
-// outer dict → key-sorted
-// inner list → order-sensitive (inferred from List<T>)
+// outer dict → key-sorted; inner list → order-sensitive (default for List<T>)
 [DictionaryEquality(sequential: true)]
 public Dictionary<string, List<int>>? HistoryByRegion { get; set; }
 
@@ -185,7 +191,19 @@ public Dictionary<string, List<int>>? HistoryByRegion { get; set; }
 public Dictionary<string, Dictionary<string, Dictionary<string, int>>>? ThreeLevelConfig { get; set; }
 ```
 
-You never need to annotate nested properties separately.
+### Explicit overrides are always transparent
+
+Annotations on a property are the single source of truth — they are never implied or hidden. If a `List<T>` property has no attribute, it uses `SequenceEquality`. If it has `[HashSetEquality]`, it uses `HashSetEquality`. There is no magic inference that could surprise you.
+
+```csharp
+public List<string>? Tags { get; set; }          // SequenceEquality (default)
+
+[HashSetEquality]
+public List<string>? Permissions { get; set; }   // HashSetEquality (explicit override)
+
+[SequenceEquality]
+public HashSet<string>? OrderedSet { get; set; } // SequenceEquality (explicit override)
+```
 
 ---
 
