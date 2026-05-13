@@ -187,11 +187,18 @@ public class NestedCollectionsProperties
     }
 
     [Property]
-    public Property ListOfSets_InnerOrderDoesNotMatter(List<HashSet<int>> items)
+    public Property ListOfSets_InnerOrderMatters(List<HashSet<int>> items)
     {
+        // [SequenceEquality] is explicit: propagates to nested HashSet<int> → inner order is now significant.
+        // Reversing inner elements produces a different sequence — equal only when all inner sets are singletons
+        // or empty (Reverse() is a no-op), so skip those trivial cases.
+        var nonTrivial = items.All(s => s.Count <= 1);
+        if (nonTrivial) return Prop.When(true, true);
         var a = new NestedCollections { ListOfSets = items };
         var b = new NestedCollections { ListOfSets = items.Select(s => new HashSet<int>(s.Reverse())).ToList() };
-        return Prop.ToProperty(a.Equals(b));
+        // With SequenceEqualityComparer on inner level: reversed sets that are non-trivial are not equal.
+        var anyReversalChangesOrder = items.Any(s => s.Count > 1 && !s.SequenceEqual(s.Reverse()));
+        return Prop.When(anyReversalChangesOrder, !a.Equals(b));
     }
 
     [Property]

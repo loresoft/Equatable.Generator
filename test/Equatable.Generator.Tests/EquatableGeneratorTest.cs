@@ -1032,6 +1032,62 @@ public partial class Container
     }
 
     [Fact]
+    public Task GenerateHashSetEqualityPropagatesIntoNestedCollections()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    /// [HashSetEquality] on List<int[]>: List uses HashSet, inner array also uses HashSet.
+    [HashSetEquality]
+    public List<int[]>? ListOfArrays { get; set; }
+
+    /// [HashSetEquality] on List<List<string>>: both levels use HashSet.
+    [HashSetEquality]
+    public List<List<string>>? ListOfLists { get; set; }
+
+    /// [HashSetEquality] on int[][]: both levels use HashSet.
+    [HashSetEquality]
+    public int[][]? JaggedArray { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
+    public Task GenerateSequenceEqualityPropagatesIntoNestedCollections()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    /// [SequenceEquality] on HashSet<HashSet<string>>: both levels use Sequence.
+    [SequenceEquality]
+    public HashSet<HashSet<string>>? SetOfSets { get; set; }
+
+    /// [SequenceEquality] on HashSet<int[]>: outer HashSet uses Sequence, inner array also uses Sequence.
+    [SequenceEquality]
+    public HashSet<int[]>? SetOfArrays { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
     public Task GenerateSequentialDictionaryEquality_NestedDictPropagatesOrderedComparer()
     {
         var source = @"
@@ -1045,6 +1101,45 @@ public partial class Container
 {
     [DictionaryEquality(sequential: true)]
     public Dictionary<string, Dictionary<string, int>>? NestedDicts { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    // ── dictKind propagation ──────────────────────────────────────────────────────────────────────
+    // When [DictionaryEquality] / [DictionaryEquality(sequential:true)] is set explicitly, the
+    // annotated kind propagates into ALL nested dictionary levels.  Nested enumerables (List, array,
+    // HashSet) keep their natural comparer regardless.
+
+    [Fact]
+    public Task GenerateDictionaryEqualityPropagatesIntoNestedDictionaries()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    /// [DictionaryEquality(sequential:true)] on 3-level nest: all dict levels use Ordered.
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, Dictionary<string, Dictionary<string, int>>>? ThreeLevelOrdered { get; set; }
+
+    /// [DictionaryEquality(sequential:true)] on dict-of-list: dict is ordered, inner list is natural Sequence.
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, List<int>>? OrderedDictOfList { get; set; }
+
+    /// [DictionaryEquality(sequential:true)] on dict-of-dict-of-list: both dict levels ordered, inner list natural.
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, Dictionary<string, List<int>>>? OrderedDictOfDictOfList { get; set; }
+
+    /// [DictionaryEquality] (unordered) on dict-of-dict: both dict levels unordered.
+    [DictionaryEquality]
+    public Dictionary<string, Dictionary<string, int>>? UnorderedNestedDict { get; set; }
 }
 ";
         var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);

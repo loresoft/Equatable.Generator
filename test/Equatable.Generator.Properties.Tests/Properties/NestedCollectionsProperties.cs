@@ -193,11 +193,14 @@ public class NestedCollectionsProperties
     }
 
     [Property]
-    public Property ListOfSets_InnerOrderDoesNotMatter(int[][] raw)
+    public Property ListOfSets_InnerOrderMatters(int[][] raw)
     {
+        // [SequenceEquality] is explicit: propagates to nested HashSet<int> → inner order is now significant.
         var a = new NestedCollections { ListOfSets = raw.Select(x => new HashSet<int>(x)).ToList() };
         var b = new NestedCollections { ListOfSets = raw.Select(x => new HashSet<int>(x.Reverse())).ToList() };
-        return a.Equals(b).ToProperty();
+        // If any inner array has >1 distinct elements and their order changes, the sets differ.
+        var anyReversalChangesOrder = raw.Any(x => x.Distinct().Count() > 1 && !x.SequenceEqual(x.Reverse()));
+        return Prop.When(anyReversalChangesOrder, !a.Equals(b));
     }
 
     [Property]

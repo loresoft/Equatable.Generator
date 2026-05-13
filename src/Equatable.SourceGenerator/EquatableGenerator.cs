@@ -166,12 +166,21 @@ public class EquatableGenerator : IIncrementalGenerator
             // (including multi-dimensional, which use MultiDimensionalArrayEqualityComparer).
             if (comparerType is ComparerTypes.Dictionary or ComparerTypes.OrderedDictionary or ComparerTypes.HashSet or ComparerTypes.Sequence)
             {
+                // enumKind is always propagated for explicit HashSet/Sequence annotations — the user's
+                // explicit declaration signals intent for ALL nested collection levels, not just the
+                // outermost one.  [SequenceEquality] on List<HashSet<T>> means every level is
+                // order-sensitive; [HashSetEquality] on HashSet<List<T>> means every level is
+                // order-insensitive.  Without an explicit annotation (inference path), nested
+                // collections keep their own natural comparer.
+                var enumKind = comparerType is ComparerTypes.HashSet or ComparerTypes.Sequence
+                    ? comparerType
+                    : (ComparerTypes?)null;
                 string? expression = propertySymbol.Type switch
                 {
-                    INamedTypeSymbol namedType => BuildCollectionComparerExpression(namedType, comparerType.Value),
+                    INamedTypeSymbol namedType => BuildCollectionComparerExpression(namedType, comparerType.Value, enumKind),
                     IArrayTypeSymbol arrayType when comparerType == ComparerTypes.HashSet
-                        => BuildHashSetArrayComparerExpression(arrayType),
-                    IArrayTypeSymbol arrayType => BuildArrayComparerExpression(arrayType),
+                        => BuildHashSetArrayComparerExpression(arrayType, enumKind),
+                    IArrayTypeSymbol arrayType => BuildArrayComparerExpression(arrayType, enumKind),
                     _ => null
                 };
                 if (expression != null)
@@ -272,7 +281,7 @@ public class EquatableGenerator : IIncrementalGenerator
     // Returns null when EqualityComparer<T>.Default is sufficient (element is a plain type).
     // Depth is unbounded — recursion terminates naturally when an element type is not a
     // recognised collection interface (BuildElementComparerExpression returns null).
-    private static string? BuildCollectionComparerExpression(INamedTypeSymbol collectionType, ComparerTypes kind)
+    private static string? BuildCollectionComparerExpression(INamedTypeSymbol collectionType, ComparerTypes kind, ComparerTypes? enumKind = null)
     {
         // unwrap nullable wrapper
         var unwrapped = collectionType.IsGenericType
@@ -333,7 +342,7 @@ public class EquatableGenerator : IIncrementalGenerator
         if ((kind == ComparerTypes.HashSet || kind == ComparerTypes.Sequence) && enumInterface != null)
         {
             var elementType = enumInterface.TypeArguments[0];
-            var elementExpr = BuildElementComparerExpression(elementType);
+            var elementExpr = BuildElementComparerExpression(elementType, enumKind: enumKind);
 
             if (elementExpr == null)
                 return null;
@@ -352,13 +361,16 @@ public class EquatableGenerator : IIncrementalGenerator
     // Returns a comparer expression for a single element type, or null if EqualityComparer<T>.Default suffices.
     // Terminates naturally when elementType is not a recognised collection interface.
     // visited guards against self-referential types (e.g. class A : IEnumerable<A>).
-    // dictKind propagates the outer dictionary ordering intent: when OrderedDictionary, any nested
-    // dictionary encountered as a value type also uses OrderedDictionaryEqualityComparer so that
-    // the ordering semantics are consistent at every level of nesting.
-    private static string? BuildElementComparerExpression(ITypeSymbol elementType, HashSet<ITypeSymbol>? visited = null, ComparerTypes dictKind = ComparerTypes.Dictionary)
+    // dictKind propagates the outer dictionary ordering intent into nested dicts.
+    // enumKind propagates the outer enumerable intent (HashSet/Sequence) into nested enumerables/arrays:
+    //   when set, all nested List/array/HashSet levels use the same comparer class as the outermost
+    //   explicit annotation, so [HashSetEquality] on List<List<T>> makes every level order-insensitive.
+    private static string? BuildElementComparerExpression(ITypeSymbol elementType, HashSet<ITypeSymbol>? visited = null, ComparerTypes dictKind = ComparerTypes.Dictionary, ComparerTypes? enumKind = null)
     {
         if (elementType is IArrayTypeSymbol arrayType)
-            return BuildArrayComparerExpression(arrayType);
+            return enumKind == ComparerTypes.HashSet
+                ? BuildHashSetArrayComparerExpression(arrayType, enumKind)
+                : BuildArrayComparerExpression(arrayType, enumKind);
 
         if (elementType is not INamedTypeSymbol named)
             return null;
@@ -389,14 +401,23 @@ public class EquatableGenerator : IIncrementalGenerator
         if (asEnumInterface != null)
         {
             var innerType = asEnumInterface.TypeArguments[0];
-            var innerExpr = BuildElementComparerExpression(innerType, visited, dictKind);
+            var innerExpr = BuildElementComparerExpression(innerType, visited, dictKind, enumKind);
             var innerTypeFq = innerType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
-            var isSet = named.AllInterfaces.Any(i => i is { Name: "ISet" or "IReadOnlySet", IsGenericType: true })
-                || named is { Name: "ISet" or "IReadOnlySet", IsGenericType: true };
-            var comparerClass = isSet
-                ? "global::Equatable.Comparers.HashSetEqualityComparer"
-                : "global::Equatable.Comparers.SequenceEqualityComparer";
+            // enumKind overrides the natural comparer choice for this nested level
+            string comparerClass;
+            if (enumKind == ComparerTypes.HashSet)
+                comparerClass = "global::Equatable.Comparers.HashSetEqualityComparer";
+            else if (enumKind == ComparerTypes.Sequence)
+                comparerClass = "global::Equatable.Comparers.SequenceEqualityComparer";
+            else
+            {
+                var isSet = named.AllInterfaces.Any(i => i is { Name: "ISet" or "IReadOnlySet", IsGenericType: true })
+                    || named is { Name: "ISet" or "IReadOnlySet", IsGenericType: true };
+                comparerClass = isSet
+                    ? "global::Equatable.Comparers.HashSetEqualityComparer"
+                    : "global::Equatable.Comparers.SequenceEqualityComparer";
+            }
 
             if (innerExpr != null)
                 return $"new {comparerClass}<{innerTypeFq}>({innerExpr})";
@@ -434,11 +455,11 @@ public class EquatableGenerator : IIncrementalGenerator
         return $"new {comparerClass}<{keyTypeFq}, {valueTypeFq}>({keyExpr}, {valueExpr})";
     }
 
-    private static string BuildArrayComparerExpression(IArrayTypeSymbol arrayType)
+    private static string BuildArrayComparerExpression(IArrayTypeSymbol arrayType, ComparerTypes? enumKind = null)
     {
         var elementType = arrayType.ElementType;
         var elementTypeFq = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var innerExpr = BuildElementComparerExpression(elementType);
+        var innerExpr = BuildElementComparerExpression(elementType, enumKind: enumKind);
 
         if (arrayType.Rank > 1)
         {
@@ -449,20 +470,30 @@ public class EquatableGenerator : IIncrementalGenerator
             return $"global::Equatable.Comparers.MultiDimensionalArrayEqualityComparer<{elementTypeFq}>.Default";
         }
 
+        // When enumKind overrides to HashSet, outer arrays also use HashSetEqualityComparer
+        var comparerClass = enumKind == ComparerTypes.HashSet
+            ? "global::Equatable.Comparers.HashSetEqualityComparer"
+            : "global::Equatable.Comparers.SequenceEqualityComparer";
+
         if (innerExpr != null)
-            return $"new global::Equatable.Comparers.SequenceEqualityComparer<{elementTypeFq}>({innerExpr})";
-        return $"global::Equatable.Comparers.SequenceEqualityComparer<{elementTypeFq}>.Default";
+            return $"new {comparerClass}<{elementTypeFq}>({innerExpr})";
+        return $"{comparerClass}<{elementTypeFq}>.Default";
     }
 
-    private static string BuildHashSetArrayComparerExpression(IArrayTypeSymbol arrayType)
+    private static string BuildHashSetArrayComparerExpression(IArrayTypeSymbol arrayType, ComparerTypes? enumKind = null)
     {
         var elementType = arrayType.ElementType;
         var elementTypeFq = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var innerExpr = BuildElementComparerExpression(elementType);
+        var innerExpr = BuildElementComparerExpression(elementType, enumKind: enumKind);
+
+        // When enumKind overrides to Sequence, outer arrays also use SequenceEqualityComparer
+        var comparerClass = enumKind == ComparerTypes.Sequence
+            ? "global::Equatable.Comparers.SequenceEqualityComparer"
+            : "global::Equatable.Comparers.HashSetEqualityComparer";
 
         if (innerExpr != null)
-            return $"new global::Equatable.Comparers.HashSetEqualityComparer<{elementTypeFq}>({innerExpr})";
-        return $"global::Equatable.Comparers.HashSetEqualityComparer<{elementTypeFq}>.Default";
+            return $"new {comparerClass}<{elementTypeFq}>({innerExpr})";
+        return $"{comparerClass}<{elementTypeFq}>.Default";
     }
 
     private static bool IsReadOnlyDictionary(INamedTypeSymbol targetSymbol)

@@ -332,4 +332,48 @@ public partial class NestedOrderedContract
         Assert.Empty(diagnostics);
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
+
+    // ── dictKind propagation ──────────────────────────────────────────────────────────────────────
+    // Explicit [DictionaryEquality] kind propagates to ALL nested dictionary levels; nested
+    // enumerables keep their natural comparer.
+
+    [Fact]
+    public Task GenerateMessagePackEquatableWithDictionaryEqualityPropagation()
+    {
+        var source = @"
+using System.Collections.Generic;
+using MessagePack;
+using Equatable.Attributes;
+using Equatable.Attributes.MessagePack;
+
+namespace Equatable.Entities;
+
+[MessagePackObject]
+[MessagePackEquatable]
+public partial class DictPropagationContract
+{
+    [Key(0)]
+    public int Id { get; set; }
+
+    [Key(1)]
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, Dictionary<string, Dictionary<string, int>>>? ThreeLevelOrdered { get; set; }
+
+    [Key(2)]
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, List<int>>? OrderedDictOfList { get; set; }
+
+    [Key(3)]
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, Dictionary<string, List<int>>>? OrderedDictOfDictOfList { get; set; }
+
+    [Key(4)]
+    [DictionaryEquality]
+    public Dictionary<string, Dictionary<string, int>>? UnorderedNestedDict { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<MessagePackEquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
 }

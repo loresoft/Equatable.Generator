@@ -332,4 +332,48 @@ public partial class NestedOrderedContract
         Assert.Empty(diagnostics);
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
+
+    // ── dictKind propagation ──────────────────────────────────────────────────────────────────────
+    // Explicit [DictionaryEquality] kind propagates to ALL nested dictionary levels; nested
+    // enumerables keep their natural comparer.
+
+    [Fact]
+    public Task GenerateDataContractEquatableWithDictionaryEqualityPropagation()
+    {
+        var source = @"
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Equatable.Attributes;
+using Equatable.Attributes.DataContract;
+
+namespace Equatable.Entities;
+
+[DataContract]
+[DataContractEquatable]
+public partial class DictPropagationContract
+{
+    [DataMember(Order = 0)]
+    public int Id { get; set; }
+
+    [DataMember(Order = 1)]
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, Dictionary<string, Dictionary<string, int>>>? ThreeLevelOrdered { get; set; }
+
+    [DataMember(Order = 2)]
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, List<int>>? OrderedDictOfList { get; set; }
+
+    [DataMember(Order = 3)]
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, Dictionary<string, List<int>>>? OrderedDictOfDictOfList { get; set; }
+
+    [DataMember(Order = 4)]
+    [DictionaryEquality]
+    public Dictionary<string, Dictionary<string, int>>? UnorderedNestedDict { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<DataContractEquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
 }
