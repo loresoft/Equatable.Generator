@@ -149,10 +149,10 @@ public List<string>? PermissionCodes { get; set; }  // override: order no longer
 **Default for:** `Dictionary<K,V>` — no attribute needed on plain dictionaries.
 
 ```csharp
-public Dictionary<string, double>? OddsBySource { get; set; }  // DictionaryEquality by default
+public Dictionary<string, double>? Prices { get; set; }  // DictionaryEquality by default
 ```
 
-`{betgenius:1.85, abelson:1.90}` equals `{abelson:1.90, betgenius:1.85}` ✓
+`{a:1.85, b:1.90}` equals `{b:1.90, a:1.85}` ✓
 
 ### `[DictionaryEquality(sequential: true)]` — key-sorted comparison
 
