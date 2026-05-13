@@ -71,7 +71,12 @@ public class DictionaryEqualityComparer<TKey, TValue> : IEqualityComparer<IDicti
         if (obj == null)
             return 0;
 
-        int hashCode = 0;
+        // Start at 1, not 0: an empty dictionary must not hash the same as null.
+        // Equals correctly returns false for (null, empty), so GetHashCode must also
+        // differ — otherwise a hash table would bucket them together and force an Equals
+        // call that returns false, producing unnecessary collisions. null returns 0 above;
+        // 1 here ensures an empty collection is always distinguishable.
+        int hashCode = 1;
 
         // Commutative SUM ensures hash is insertion-order independent, consistent with
         // Equals which uses TryGetValue (also order-independent). Previously GetHashCode
