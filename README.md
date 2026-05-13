@@ -77,9 +77,8 @@ public partial class EventContract
 {
     [DataMember(Order = 0)] public int EventId { get; set; }
 
-    [DataMember(Order = 1)]
-    [SequenceEquality]
-    public string[]? Tags { get; set; }
+    // string[] defaults to [SequenceEquality] — no attribute needed.
+    [DataMember(Order = 1)] public string[]? Tags { get; set; }
 
     [IgnoreDataMember]
     public DateTime LastSeen { get; set; }  // excluded from equality
@@ -105,38 +104,52 @@ public partial class LiveScore
 
 ### `[SequenceEquality]` — order matters
 
+**Default for:** `List<T>`, `T[]` — no attribute needed on these types.
+
 ```csharp
-[SequenceEquality]
-public List<string>? Tracks { get; set; }
+public List<string>? Tracks { get; set; }   // SequenceEquality by default
+public int[]? Scores { get; set; }           // SequenceEquality by default
 ```
 
 `["A","B","C"]` equals `["A","B","C"]` ✓  
 `["A","B","C"]` does NOT equal `["C","B","A"]` ✓
 
-Also works on `int[]`, `IEnumerable<T>`, and any sequence type.
+Also works on `IEnumerable<T>` and any sequence type when the attribute is applied explicitly.
 
 **Direction override:** apply to `HashSet<T>` to force order-sensitive comparison on a normally unordered set.
+
+```csharp
+[SequenceEquality]
+public HashSet<string>? OrderedTags { get; set; }  // override: order now matters
+```
 
 ---
 
 ### `[HashSetEquality]` — order does not matter
 
+**Default for:** `HashSet<T>` — no attribute needed on plain hash sets.
+
 ```csharp
-[HashSetEquality]
-public HashSet<string>? Roles { get; set; }
+public HashSet<string>? Roles { get; set; }  // HashSetEquality by default
 ```
 
 `{"admin","editor"}` equals `{"editor","admin"}` ✓
 
 **Direction override:** apply to `List<T>` or `T[]` to make them order-insensitive.
 
+```csharp
+[HashSetEquality]
+public List<string>? PermissionCodes { get; set; }  // override: order no longer matters
+```
+
 ---
 
 ### `[DictionaryEquality]` — insertion order does not matter
 
+**Default for:** `Dictionary<K,V>` — no attribute needed on plain dictionaries.
+
 ```csharp
-[DictionaryEquality]
-public Dictionary<string, double>? OddsBySource { get; set; }
+public Dictionary<string, double>? OddsBySource { get; set; }  // DictionaryEquality by default
 ```
 
 `{betgenius:1.85, abelson:1.90}` equals `{abelson:1.90, betgenius:1.85}` ✓
