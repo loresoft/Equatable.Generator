@@ -52,7 +52,7 @@ public class OrderDataContractProperties
     public Property DifferentIdNotEqual(string? name, int id1, int id2)
     {
         if (id1 == id2)
-            return true.ToProperty().When(true);
+            return true.ToProperty().When(false);
 
         var a = new OrderDataContract { Id = id1, Name = name };
         var b = new OrderDataContract { Id = id2, Name = name };
@@ -63,7 +63,7 @@ public class OrderDataContractProperties
     public Property DifferentNameNotEqual(int id, string name1, string name2)
     {
         if (name1 == name2)
-            return true.ToProperty().When(true);
+            return true.ToProperty().When(false);
 
         var a = new OrderDataContract { Id = id, Name = name1 };
         var b = new OrderDataContract { Id = id, Name = name2 };

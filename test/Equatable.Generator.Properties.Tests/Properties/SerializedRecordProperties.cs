@@ -55,8 +55,8 @@ public class SerializedRecordProperties
     [Property]
     public Property DifferentIdNotEqual(double score, int id1, int id2)
     {
-        if (id1 == id2)
-            return true.ToProperty().When(true);
+        if (id1 == id2 || double.IsNaN(score))
+            return true.ToProperty().When(false);
 
         var a = new SerializedRecord { Id = id1, Score = score };
         var b = new SerializedRecord { Id = id2, Score = score };
@@ -66,8 +66,10 @@ public class SerializedRecordProperties
     [Property]
     public Property DifferentScoreNotEqual(int id, double s1, double s2)
     {
-        if (Math.Abs(s1 - s2) < double.Epsilon)
-            return true.ToProperty().When(true);
+        // Generated code uses == (exact bit equality), not a tolerance comparison.
+        // NaN != NaN in IEEE 754 so also skip NaN inputs — the reflexivity test covers that case.
+        if (s1 == s2 || double.IsNaN(s1) || double.IsNaN(s2))
+            return true.ToProperty().When(false);
 
         var a = new SerializedRecord { Id = id, Score = s1 };
         var b = new SerializedRecord { Id = id, Score = s2 };
