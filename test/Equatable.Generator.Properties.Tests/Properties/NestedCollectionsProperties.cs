@@ -724,4 +724,64 @@ public class NestedCollectionsProperties
         var b = new NestedCollections { DictOfArrays = raw.ToDictionary(kv => kv.Key, kv => (int[])kv.Value.Clone()) };
         return (a.Equals(b) && a.GetHashCode() == b.GetHashCode()).ToProperty();
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Symmetry: Equals(a, b) == Equals(b, a) for all nested collection shapes
+    // ══════════════════════════════════════════════════════════════════════
+
+    [Property]
+    public Property Symmetry_DictOfLists(Dictionary<string, List<int>> raw1, Dictionary<string, List<int>> raw2)
+    {
+        var a = new NestedCollections { DictOfLists = raw1 };
+        var b = new NestedCollections { DictOfLists = raw2 };
+        return (a.Equals(b) == b.Equals(a)).ToProperty();
+    }
+
+    [Property]
+    public Property Symmetry_DictOfDicts(Dictionary<string, Dictionary<string, int>> raw1, Dictionary<string, Dictionary<string, int>> raw2)
+    {
+        var a = new NestedCollections { DictOfDicts = raw1 };
+        var b = new NestedCollections { DictOfDicts = raw2 };
+        return (a.Equals(b) == b.Equals(a)).ToProperty();
+    }
+
+    [Property]
+    public Property Symmetry_ListOfDicts(List<Dictionary<string, int>> items1, List<Dictionary<string, int>> items2)
+    {
+        var a = new NestedCollections { ListOfDicts = items1 };
+        var b = new NestedCollections { ListOfDicts = items2 };
+        return (a.Equals(b) == b.Equals(a)).ToProperty();
+    }
+
+    [Property]
+    public Property Symmetry_ListOfLists(List<List<int>> items1, List<List<int>> items2)
+    {
+        var a = new NestedCollections { ListOfLists = items1 };
+        var b = new NestedCollections { ListOfLists = items2 };
+        return (a.Equals(b) == b.Equals(a)).ToProperty();
+    }
+
+    [Property]
+    public Property Symmetry_ThreeLevelNested(Dictionary<string, Dictionary<string, List<int>>> raw1, Dictionary<string, Dictionary<string, List<int>>> raw2)
+    {
+        var a = new NestedCollections { ThreeLevelNested = raw1 };
+        var b = new NestedCollections { ThreeLevelNested = raw2 };
+        return (a.Equals(b) == b.Equals(a)).ToProperty();
+    }
+
+    [Property]
+    public Property Symmetry_FlatArray(int[] arr1, int[] arr2)
+    {
+        var a = new NestedCollections { FlatArray = arr1 };
+        var b = new NestedCollections { FlatArray = arr2 };
+        return (a.Equals(b) == b.Equals(a)).ToProperty();
+    }
+
+    [Property]
+    public Property Symmetry_DictOfArrays(Dictionary<string, int[]> raw1, Dictionary<string, int[]> raw2)
+    {
+        var a = new NestedCollections { DictOfArrays = raw1 };
+        var b = new NestedCollections { DictOfArrays = raw2 };
+        return (a.Equals(b) == b.Equals(a)).ToProperty();
+    }
 }
