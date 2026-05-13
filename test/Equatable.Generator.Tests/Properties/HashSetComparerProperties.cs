@@ -8,19 +8,19 @@ public class HashSetComparerProperties
     private static readonly HashSetEqualityComparer<string> Comparer = HashSetEqualityComparer<string>.Default;
 
     [Property]
-    public Property Reflexivity(HashSet<string> set)
+    public Property Equals_Reflexivity_SameInstance_ReturnsTrue(HashSet<string> set)
     {
         return Prop.ToProperty(Comparer.Equals(set, set));
     }
 
     [Property]
-    public Property Symmetry(HashSet<string> x, HashSet<string> y)
+    public Property Equals_Symmetry_AEqualsB_ImpliesBEqualsA(HashSet<string> x, HashSet<string> y)
     {
         return Prop.ToProperty(Comparer.Equals(x, y) == Comparer.Equals(y, x));
     }
 
     [Property]
-    public Property HashIsInsertionOrderIndependent(HashSet<string> set)
+    public Property HashCode_InsertionOrderIndependent(HashSet<string> set)
     {
         // build same set from reversed list — HashSet has no guaranteed iteration order,
         // but two sets with identical elements must have equal hash regardless of add order
@@ -29,14 +29,14 @@ public class HashSetComparerProperties
     }
 
     [Property]
-    public Property EqualSetsHaveSameHashCode(HashSet<string> set)
+    public Property HashCode_EqualSets_HaveSameHash(HashSet<string> set)
     {
         var copy = new HashSet<string>(set);
         return Prop.ToProperty(Comparer.Equals(set, copy) && Comparer.GetHashCode(set) == Comparer.GetHashCode(copy));
     }
 
     [Property]
-    public Property ExtraElementMakesNotEqual(HashSet<string> set, string extra)
+    public Property Equals_SupersetOfElements_ReturnsFalse(HashSet<string> set, string extra)
     {
         if (set.Contains(extra))
             return Prop.When(true, true);
@@ -46,7 +46,7 @@ public class HashSetComparerProperties
     }
 
     [Property]
-    public Property NullEqualsNull()
+    public Property Equals_BothNull_ReturnsTrue()
     {
         return Prop.ToProperty(Comparer.Equals(null, null));
     }

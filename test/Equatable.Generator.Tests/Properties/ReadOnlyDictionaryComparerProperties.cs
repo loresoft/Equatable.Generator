@@ -7,14 +7,14 @@ public class ReadOnlyDictionaryComparerProperties
     private static readonly ReadOnlyDictionaryEqualityComparer<string, int> Comparer = ReadOnlyDictionaryEqualityComparer<string, int>.Default;
 
     [Property]
-    public Property Reflexivity(Dictionary<string, int> dict)
+    public Property Equals_Reflexivity_SameInstance_ReturnsTrue(Dictionary<string, int> dict)
     {
         IReadOnlyDictionary<string, int> d = dict;
         return Prop.ToProperty(Comparer.Equals(d, d));
     }
 
     [Property]
-    public Property Symmetry(Dictionary<string, int> x, Dictionary<string, int> y)
+    public Property Equals_Symmetry_AEqualsB_ImpliesBEqualsA(Dictionary<string, int> x, Dictionary<string, int> y)
     {
         IReadOnlyDictionary<string, int> a = x;
         IReadOnlyDictionary<string, int> b = y;
@@ -22,16 +22,16 @@ public class ReadOnlyDictionaryComparerProperties
     }
 
     [Property]
-    public Property EqualImpliesSameHashCode(Dictionary<string, int> dict)
+    public Property HashCode_EqualDictionaries_HaveSameHash(Dictionary<string, int> dict)
     {
-        // two dictionaries with same entries in different insertion order must have equal hash
+        // equal → same hash (one direction only — hash collisions can make unequal produce same hash)
         IReadOnlyDictionary<string, int> a = dict;
         IReadOnlyDictionary<string, int> b = new Dictionary<string, int>(dict.Reverse());
-        return Prop.ToProperty(Comparer.Equals(a, b) == (Comparer.GetHashCode(a) == Comparer.GetHashCode(b)));
+        return Prop.When(Comparer.Equals(a, b), Comparer.GetHashCode(a) == Comparer.GetHashCode(b));
     }
 
     [Property]
-    public Property HashIsInsertionOrderIndependent(Dictionary<string, int> dict)
+    public Property HashCode_InsertionOrderIndependent(Dictionary<string, int> dict)
     {
         IReadOnlyDictionary<string, int> a = dict;
         IReadOnlyDictionary<string, int> b = new Dictionary<string, int>(dict.Reverse());
@@ -39,20 +39,20 @@ public class ReadOnlyDictionaryComparerProperties
     }
 
     [Property]
-    public Property NullEqualsNull()
+    public Property Equals_BothNull_ReturnsTrue()
     {
         return Prop.ToProperty(Comparer.Equals(null, null));
     }
 
     [Property]
-    public Property NullNotEqualsNonNull(Dictionary<string, int> dict)
+    public Property Equals_OneNull_ReturnsFalse(Dictionary<string, int> dict)
     {
         IReadOnlyDictionary<string, int> d = dict;
         return Prop.ToProperty(!Comparer.Equals(null, d) && !Comparer.Equals(d, null));
     }
 
     [Property]
-    public Property ExtraKeyMakesNotEqual(Dictionary<string, int> dict, string key, int value)
+    public Property Equals_DictionaryWithExtraKey_ReturnsFalse(Dictionary<string, int> dict, string key, int value)
     {
         // guard: key must not already be in dict
         if (dict.ContainsKey(key))
