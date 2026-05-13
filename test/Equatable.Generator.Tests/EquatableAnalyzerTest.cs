@@ -1,14 +1,3 @@
-using System.Collections.Immutable;
-
-using Equatable.Attributes;
-using Equatable.SourceGenerator;
-using Equatable.SourceGenerator.DataContract;
-using Equatable.SourceGenerator.MessagePack;
-
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Diagnostics;
-
 namespace Equatable.Generator.Tests;
 
 public class EquatableAnalyzerTest
@@ -42,7 +31,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         Assert.Empty(diagnostics);
     }
@@ -67,7 +56,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         Assert.Empty(diagnostics);
     }
@@ -90,7 +79,7 @@ public partial class Audit
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         Assert.Empty(diagnostics);
     }
@@ -123,7 +112,7 @@ public class LengthEqualityComparer : IEqualityComparer<string?>
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         Assert.Empty(diagnostics);
     }
@@ -143,7 +132,7 @@ public class NotEquatable
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         Assert.Empty(diagnostics);
     }
@@ -167,7 +156,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("EQ0010", diagnostic.Id);
@@ -193,7 +182,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("EQ0011", diagnostic.Id);
@@ -219,7 +208,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("EQ0012", diagnostic.Id);
@@ -245,7 +234,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("EQ0013", diagnostic.Id);
@@ -270,7 +259,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("EQ0001", diagnostic.Id);
@@ -295,7 +284,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("EQ0002", diagnostic.Id);
@@ -320,7 +309,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("EQ0002", diagnostic.Id);
@@ -343,7 +332,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         Assert.Empty(diagnostics);
     }
@@ -365,7 +354,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("EQ0001", diagnostic.Id);
@@ -389,7 +378,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         Assert.Equal(2, diagnostics.Length);
         Assert.Contains(diagnostics, d => d.Id == "EQ0001" && d.GetMessage().Contains("Permissions"));
@@ -414,7 +403,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("EQ0001", diagnostic.Id);
@@ -439,7 +428,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("EQ0002", diagnostic.Id);
@@ -464,7 +453,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("EQ0002", diagnostic.Id);
@@ -489,7 +478,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         Assert.Empty(diagnostics);
     }
@@ -512,7 +501,7 @@ public partial class UserImport
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         Assert.Empty(diagnostics);
     }
@@ -539,7 +528,7 @@ public partial class Priority : ModelBase
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("EQ0002", diagnostic.Id);
@@ -570,130 +559,165 @@ public partial class Priority : ModelBase
 }
 ";
 
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source);
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         Assert.Empty(diagnostics);
     }
 
+    // ── ISet / IReadOnlySet / array diagnostics ───────────────────────────────────────────────────
+
     [Fact]
-    public async Task AnalyzeDataContractEquatableMissingDataContract()
+    public async Task AnalyzeMissingAttributeForISet()
     {
+        // ISet<T> implements IEnumerable<T> → EQ0002 fires when no attribute is present
         const string source = @"
-using System.Runtime.Serialization;
+using System.Collections.Generic;
 using Equatable.Attributes;
 
 namespace Equatable.Entities;
 
-[DataContractEquatable]
-public partial class OrderDataContract
+[Equatable]
+public partial class UserImport
 {
-    [DataMember(Order = 0)]
-    public int Id { get; set; }
+    public ISet<int>? Tags { get; set; }
 }
 ";
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source,
-            new DataContractEquatableAnalyzer());
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
-        Assert.Equal("EQ0020", diagnostic.Id);
-        Assert.Contains("OrderDataContract", diagnostic.GetMessage());
+        Assert.Equal("EQ0002", diagnostic.Id);
+        Assert.Contains("Tags", diagnostic.GetMessage());
     }
 
     [Fact]
-    public async Task AnalyzeDataContractEquatableWithDataContractIsValid()
+    public async Task AnalyzeMissingAttributeForIReadOnlySet()
     {
+        // IReadOnlySet<T> implements IEnumerable<T> → EQ0002 fires when no attribute is present
         const string source = @"
-using System.Runtime.Serialization;
+using System.Collections.Generic;
 using Equatable.Attributes;
 
 namespace Equatable.Entities;
 
-[DataContract]
-[DataContractEquatable]
-public partial class OrderDataContract
+[Equatable]
+public partial class UserImport
 {
-    [DataMember(Order = 0)]
-    public int Id { get; set; }
+    public IReadOnlySet<int>? Roles { get; set; }
 }
 ";
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source,
-            new DataContractEquatableAnalyzer());
-
-        Assert.Empty(diagnostics);
-    }
-
-    [Fact]
-    public async Task AnalyzeMessagePackEquatableMissingMessagePackObject()
-    {
-        const string source = @"
-using MessagePack;
-using Equatable.Attributes;
-
-namespace Equatable.Entities;
-
-[MessagePackEquatable]
-public partial class PricingContract
-{
-    [Key(0)]
-    public int MarketId { get; set; }
-}
-";
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source,
-            new MessagePackEquatableAnalyzer());
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         var diagnostic = Assert.Single(diagnostics);
-        Assert.Equal("EQ0021", diagnostic.Id);
-        Assert.Contains("PricingContract", diagnostic.GetMessage());
+        Assert.Equal("EQ0002", diagnostic.Id);
+        Assert.Contains("Roles", diagnostic.GetMessage());
     }
 
     [Fact]
-    public async Task AnalyzeMessagePackEquatableWithMessagePackObjectIsValid()
+    public async Task AnalyzeMissingAttributeForArray()
     {
+        // int[] without [SequenceEquality] → EQ0002
         const string source = @"
-using MessagePack;
 using Equatable.Attributes;
 
 namespace Equatable.Entities;
 
-[MessagePackObject]
-[MessagePackEquatable]
-public partial class PricingContract
+[Equatable]
+public partial class UserImport
 {
-    [Key(0)]
-    public int MarketId { get; set; }
+    public int[]? Codes { get; set; }
 }
 ";
-        var diagnostics = await GetAnalyzerDiagnosticsAsync(source,
-            new MessagePackEquatableAnalyzer());
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0002", diagnostic.Id);
+        Assert.Contains("Codes", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeMissingAttributeForMultiDimensionalArray()
+    {
+        // int[,] without [SequenceEquality] → EQ0002
+        const string source = @"
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Grid
+{
+    public int[,]? Cells { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0002", diagnostic.Id);
+        Assert.Contains("Cells", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeHashSetEqualityOnISetIsValid()
+    {
+        // [HashSetEquality] on ISet<T> must NOT emit EQ0012
+        const string source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    [HashSetEquality]
+    public ISet<int>? Tags { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
         Assert.Empty(diagnostics);
     }
 
-    private static async Task<ImmutableArray<Diagnostic>> GetAnalyzerDiagnosticsAsync(
-        string source, params DiagnosticAnalyzer[] additionalAnalyzers)
+    [Fact]
+    public async Task AnalyzeHashSetEqualityOnIReadOnlySetIsValid()
     {
-        var syntaxTree = CSharpSyntaxTree.ParseText(source);
-        var references = AppDomain.CurrentDomain.GetAssemblies()
-            .Where(assembly => !assembly.IsDynamic && !string.IsNullOrWhiteSpace(assembly.Location))
-            .Select(assembly => MetadataReference.CreateFromFile(assembly.Location))
-            .Concat(
-            [
-                MetadataReference.CreateFromFile(typeof(EquatableAttribute).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Equatable.Attributes.DataContractEquatableAttribute).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Equatable.Attributes.MessagePackEquatableAttribute).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(System.Runtime.Serialization.DataMemberAttribute).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(MessagePack.KeyAttribute).Assembly.Location),
-            ]);
+        // [HashSetEquality] on IReadOnlySet<T> must NOT emit EQ0012
+        const string source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
 
-        var compilation = CSharpCompilation.Create(
-            "Test.Analyzer",
-            [syntaxTree],
-            references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+namespace Equatable.Entities;
 
-        DiagnosticAnalyzer[] analyzers = [new EquatableAnalyzer(), .. additionalAnalyzers];
-        var compilationWithAnalyzers = compilation.WithAnalyzers([.. analyzers]);
+[Equatable]
+public partial class UserImport
+{
+    [HashSetEquality]
+    public IReadOnlySet<int>? Roles { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
-        return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync();
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public async Task AnalyzeSequenceEqualityOnArrayIsValid()
+    {
+        // [SequenceEquality] on int[] must NOT emit EQ0013
+        const string source = @"
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    [SequenceEquality]
+    public int[]? Codes { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        Assert.Empty(diagnostics);
     }
 }
