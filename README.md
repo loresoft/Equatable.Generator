@@ -32,9 +32,11 @@ This library generates correct `Equals` + `GetHashCode` at compile-time — zero
 ## Getting started
 
 ```xml
-<!-- Add to your .csproj — PrivateAssets means it doesn't become a runtime dependency -->
 <PackageReference Include="Equatable.Generator" PrivateAssets="all" />
+<PackageReference Include="Equatable.Comparers" />
 ```
+
+`PrivateAssets="all"` on the generator is optional — it prevents the compile-time-only package from flowing to consumers of your library. `Equatable.Comparers` is the runtime package the generated code calls into and must be a real dependency.
 
 Mark your class as `partial` and add `[Equatable]`:
 
