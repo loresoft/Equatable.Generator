@@ -9,9 +9,9 @@ namespace Equatable.Entities
         public bool Equals(global::Equatable.Entities.ConcreteRecord? other)
         {
             return !(other is null)
-                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Label, other.Label)
+                && Rank == other.Rank
                 && Id == other.Id
-                && Score == other.Score;
+                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Name, other.Name);
 
         }
 
@@ -35,10 +35,10 @@ namespace Equatable.Entities
 
         /// <inheritdoc />
         public override int GetHashCode(){
-            int hashCode = 242241058;
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Label!);
+            int hashCode = 493275453;
+            hashCode = (hashCode * -1521134295) + Rank.GetHashCode();
             hashCode = (hashCode * -1521134295) + Id.GetHashCode();
-            hashCode = (hashCode * -1521134295) + Score.GetHashCode();
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Name!);
             return hashCode;
 
         }

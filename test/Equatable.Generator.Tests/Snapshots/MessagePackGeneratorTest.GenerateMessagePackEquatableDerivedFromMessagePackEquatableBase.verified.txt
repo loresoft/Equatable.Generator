@@ -3,40 +3,40 @@
 
 namespace Equatable.Entities
 {
-    partial class DerivedRecord : global::System.IEquatable<global::Equatable.Entities.DerivedRecord?>
+    partial class DerivedContract : global::System.IEquatable<global::Equatable.Entities.DerivedContract?>
     {
         /// <inheritdoc />
-        public bool Equals(global::Equatable.Entities.DerivedRecord? other)
+        public bool Equals(global::Equatable.Entities.DerivedContract? other)
         {
             return !(other is null)
                 && base.Equals(other)
-                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Label, other.Label);
+                && Rank == other.Rank;
 
         }
 
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {
-            return Equals(obj as global::Equatable.Entities.DerivedRecord);
+            return Equals(obj as global::Equatable.Entities.DerivedContract);
         }
 
         /// <inheritdoc />
-        public static bool operator ==(global::Equatable.Entities.DerivedRecord? left, global::Equatable.Entities.DerivedRecord? right)
+        public static bool operator ==(global::Equatable.Entities.DerivedContract? left, global::Equatable.Entities.DerivedContract? right)
         {
-            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.DerivedRecord?>.Default.Equals(left, right);
+            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.DerivedContract?>.Default.Equals(left, right);
         }
 
         /// <inheritdoc />
-        public static bool operator !=(global::Equatable.Entities.DerivedRecord? left, global::Equatable.Entities.DerivedRecord? right)
+        public static bool operator !=(global::Equatable.Entities.DerivedContract? left, global::Equatable.Entities.DerivedContract? right)
         {
             return !(left == right);
         }
 
         /// <inheritdoc />
         public override int GetHashCode(){
-            int hashCode = -1147791342;
+            int hashCode = -2095922015;
             hashCode = (hashCode * -1521134295) + base.GetHashCode();
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Label!);
+            hashCode = (hashCode * -1521134295) + Rank.GetHashCode();
             return hashCode;
 
         }

@@ -3,10 +3,10 @@
 
 namespace Equatable.Entities
 {
-    partial class OrderedPackedContract : global::System.IEquatable<global::Equatable.Entities.OrderedPackedContract?>
+    partial class OrderedContract : global::System.IEquatable<global::Equatable.Entities.OrderedContract?>
     {
         /// <inheritdoc />
-        public bool Equals(global::Equatable.Entities.OrderedPackedContract? other)
+        public bool Equals(global::Equatable.Entities.OrderedContract? other)
         {
             return !(other is null)
                 && Id == other.Id
@@ -17,17 +17,17 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {
-            return Equals(obj as global::Equatable.Entities.OrderedPackedContract);
+            return Equals(obj as global::Equatable.Entities.OrderedContract);
         }
 
         /// <inheritdoc />
-        public static bool operator ==(global::Equatable.Entities.OrderedPackedContract? left, global::Equatable.Entities.OrderedPackedContract? right)
+        public static bool operator ==(global::Equatable.Entities.OrderedContract? left, global::Equatable.Entities.OrderedContract? right)
         {
-            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.OrderedPackedContract?>.Default.Equals(left, right);
+            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.OrderedContract?>.Default.Equals(left, right);
         }
 
         /// <inheritdoc />
-        public static bool operator !=(global::Equatable.Entities.OrderedPackedContract? left, global::Equatable.Entities.OrderedPackedContract? right)
+        public static bool operator !=(global::Equatable.Entities.OrderedContract? left, global::Equatable.Entities.OrderedContract? right)
         {
             return !(left == right);
         }

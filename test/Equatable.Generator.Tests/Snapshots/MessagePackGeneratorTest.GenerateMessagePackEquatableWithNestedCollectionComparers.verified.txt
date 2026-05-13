@@ -3,10 +3,10 @@
 
 namespace Equatable.Entities
 {
-    partial class PackedWithNestedCollections : global::System.IEquatable<global::Equatable.Entities.PackedWithNestedCollections?>
+    partial class ContractWithNestedCollections : global::System.IEquatable<global::Equatable.Entities.ContractWithNestedCollections?>
     {
         /// <inheritdoc />
-        public bool Equals(global::Equatable.Entities.PackedWithNestedCollections? other)
+        public bool Equals(global::Equatable.Entities.ContractWithNestedCollections? other)
         {
             return !(other is null)
                 && Id == other.Id
@@ -20,17 +20,17 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {
-            return Equals(obj as global::Equatable.Entities.PackedWithNestedCollections);
+            return Equals(obj as global::Equatable.Entities.ContractWithNestedCollections);
         }
 
         /// <inheritdoc />
-        public static bool operator ==(global::Equatable.Entities.PackedWithNestedCollections? left, global::Equatable.Entities.PackedWithNestedCollections? right)
+        public static bool operator ==(global::Equatable.Entities.ContractWithNestedCollections? left, global::Equatable.Entities.ContractWithNestedCollections? right)
         {
-            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.PackedWithNestedCollections?>.Default.Equals(left, right);
+            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.ContractWithNestedCollections?>.Default.Equals(left, right);
         }
 
         /// <inheritdoc />
-        public static bool operator !=(global::Equatable.Entities.PackedWithNestedCollections? left, global::Equatable.Entities.PackedWithNestedCollections? right)
+        public static bool operator !=(global::Equatable.Entities.ContractWithNestedCollections? left, global::Equatable.Entities.ContractWithNestedCollections? right)
         {
             return !(left == right);
         }

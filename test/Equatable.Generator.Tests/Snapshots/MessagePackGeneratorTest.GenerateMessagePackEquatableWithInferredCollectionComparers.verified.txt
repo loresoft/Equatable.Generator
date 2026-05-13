@@ -3,10 +3,10 @@
 
 namespace Equatable.Entities
 {
-    partial class PackedWithCollections : global::System.IEquatable<global::Equatable.Entities.PackedWithCollections?>
+    partial class ContractWithCollections : global::System.IEquatable<global::Equatable.Entities.ContractWithCollections?>
     {
         /// <inheritdoc />
-        public bool Equals(global::Equatable.Entities.PackedWithCollections? other)
+        public bool Equals(global::Equatable.Entities.ContractWithCollections? other)
         {
             return !(other is null)
                 && Id == other.Id
@@ -20,17 +20,17 @@ namespace Equatable.Entities
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {
-            return Equals(obj as global::Equatable.Entities.PackedWithCollections);
+            return Equals(obj as global::Equatable.Entities.ContractWithCollections);
         }
 
         /// <inheritdoc />
-        public static bool operator ==(global::Equatable.Entities.PackedWithCollections? left, global::Equatable.Entities.PackedWithCollections? right)
+        public static bool operator ==(global::Equatable.Entities.ContractWithCollections? left, global::Equatable.Entities.ContractWithCollections? right)
         {
-            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.PackedWithCollections?>.Default.Equals(left, right);
+            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.ContractWithCollections?>.Default.Equals(left, right);
         }
 
         /// <inheritdoc />
-        public static bool operator !=(global::Equatable.Entities.PackedWithCollections? left, global::Equatable.Entities.PackedWithCollections? right)
+        public static bool operator !=(global::Equatable.Entities.ContractWithCollections? left, global::Equatable.Entities.ContractWithCollections? right)
         {
             return !(left == right);
         }

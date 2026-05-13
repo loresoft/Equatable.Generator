@@ -3,40 +3,40 @@
 
 namespace Equatable.Entities
 {
-    partial class PricingContract : global::System.IEquatable<global::Equatable.Entities.PricingContract?>
+    partial class OrderDataContract : global::System.IEquatable<global::Equatable.Entities.OrderDataContract?>
     {
         /// <inheritdoc />
-        public bool Equals(global::Equatable.Entities.PricingContract? other)
+        public bool Equals(global::Equatable.Entities.OrderDataContract? other)
         {
             return !(other is null)
-                && MarketId == other.MarketId
-                && Probability == other.Probability;
+                && Id == other.Id
+                && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Name, other.Name);
 
         }
 
         /// <inheritdoc />
         public override bool Equals(object? obj)
         {
-            return Equals(obj as global::Equatable.Entities.PricingContract);
+            return Equals(obj as global::Equatable.Entities.OrderDataContract);
         }
 
         /// <inheritdoc />
-        public static bool operator ==(global::Equatable.Entities.PricingContract? left, global::Equatable.Entities.PricingContract? right)
+        public static bool operator ==(global::Equatable.Entities.OrderDataContract? left, global::Equatable.Entities.OrderDataContract? right)
         {
-            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.PricingContract?>.Default.Equals(left, right);
+            return global::System.Collections.Generic.EqualityComparer<global::Equatable.Entities.OrderDataContract?>.Default.Equals(left, right);
         }
 
         /// <inheritdoc />
-        public static bool operator !=(global::Equatable.Entities.PricingContract? left, global::Equatable.Entities.PricingContract? right)
+        public static bool operator !=(global::Equatable.Entities.OrderDataContract? left, global::Equatable.Entities.OrderDataContract? right)
         {
             return !(left == right);
         }
 
         /// <inheritdoc />
         public override int GetHashCode(){
-            int hashCode = -1121495104;
-            hashCode = (hashCode * -1521134295) + MarketId.GetHashCode();
-            hashCode = (hashCode * -1521134295) + Probability.GetHashCode();
+            int hashCode = -1919740922;
+            hashCode = (hashCode * -1521134295) + Id.GetHashCode();
+            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Name!);
             return hashCode;
 
         }

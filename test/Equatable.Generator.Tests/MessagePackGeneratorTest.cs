@@ -15,18 +15,18 @@ namespace Equatable.Entities;
 
 [MessagePackObject]
 [MessagePackEquatable]
-public partial class PricingContract
+public partial class OrderDataContract
 {
     [Key(0)]
-    public int MarketId { get; set; }
+    public int Id { get; set; }
 
     [Key(1)]
-    public double Probability { get; set; }
+    public string? Name { get; set; }
+
+    public string? InternalNote { get; set; }
 
     [IgnoreMember]
-    public string? DebugInfo { get; set; }
-
-    public string? NotIncluded { get; set; }
+    public string? IgnoredField { get; set; }
 }
 ";
         var (diagnostics, output) = GetGeneratedOutput<MessagePackEquatableGenerator>(source);
@@ -49,24 +49,24 @@ namespace Equatable.Entities;
 
 [MessagePackObject]
 [MessagePackEquatable]
-public partial class DerivedRecord : BaseRecord
+public partial class DerivedContract : BaseContract
 {
     [Key(2)]
-    public string? Label { get; set; }
+    public int Rank { get; set; }
 }
 
 [MessagePackObject]
 [MessagePackEquatable]
-public partial class BaseRecord
+public partial class BaseContract
 {
     [Key(0)]
     public int Id { get; set; }
 
     [Key(1)]
-    public double Score { get; set; }
+    public string? Name { get; set; }
 }
 ";
-        var (diagnostics, output) = GetNamedGeneratedOutput<MessagePackEquatableGenerator>(source, "DerivedRecord");
+        var (diagnostics, output) = GetNamedGeneratedOutput<MessagePackEquatableGenerator>(source, "DerivedContract");
         Assert.Empty(diagnostics);
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
@@ -89,7 +89,7 @@ namespace Equatable.Entities;
 public partial class ConcreteRecord : UnannotatedBase
 {
     [Key(2)]
-    public string? Label { get; set; }
+    public int Rank { get; set; }
 }
 
 public abstract class UnannotatedBase
@@ -98,7 +98,7 @@ public abstract class UnannotatedBase
     public int Id { get; set; }
 
     [Key(1)]
-    public double Score { get; set; }
+    public string? Name { get; set; }
 }
 ";
         var (diagnostics, output) = GetNamedGeneratedOutput<MessagePackEquatableGenerator>(source, "ConcreteRecord");
@@ -122,7 +122,7 @@ namespace Equatable.Entities;
 
 [MessagePackObject]
 [MessagePackEquatable]
-public partial class OrderedPackedContract
+public partial class OrderedContract
 {
     [Key(0)]
     public int Id { get; set; }
@@ -153,7 +153,7 @@ namespace Equatable.Entities;
 
 [MessagePackObject]
 [MessagePackEquatable]
-public partial class PackedWithCollections
+public partial class ContractWithCollections
 {
     [Key(0)]
     public int Id { get; set; }
@@ -170,9 +170,6 @@ public partial class PackedWithCollections
     [Key(4)]
     public IReadOnlyDictionary<string, double>? Rates { get; set; }
 
-    [IgnoreMember]
-    public string? Ignored { get; set; }
-
     public string? NotIncluded { get; set; }
 }
 ";
@@ -183,6 +180,8 @@ public partial class PackedWithCollections
 
     // ── nested collection comparers ───────────────────────────────────────────────────────────────
     // Adapter inference must recurse into nested types and compose structural comparers.
+    // e.g. Dictionary<string, List<int>> → DictionaryEqualityComparer with SequenceEqualityComparer
+    //      List<Dictionary<string, int>> → SequenceEqualityComparer with DictionaryEqualityComparer
 
     [Fact]
     public Task GenerateMessagePackEquatableWithNestedCollectionComparers()
@@ -196,7 +195,7 @@ namespace Equatable.Entities;
 
 [MessagePackObject]
 [MessagePackEquatable]
-public partial class PackedWithNestedCollections
+public partial class ContractWithNestedCollections
 {
     [Key(0)]
     public int Id { get; set; }
@@ -238,7 +237,7 @@ public partial class AllIgnored
     [IgnoreMember]
     public int Id { get; set; }
 
-    public string? NotIncluded { get; set; }
+    public string? InternalNote { get; set; }
 }
 ";
         var (diagnostics, output) = GetGeneratedOutput<MessagePackEquatableGenerator>(source);
