@@ -213,6 +213,24 @@ public List<string>? Permissions { get; set; }   // HashSetEquality (explicit ov
 public HashSet<string>? OrderedSet { get; set; } // SequenceEquality (explicit override)
 ```
 
+The same logic applies inside nested collections. The outer annotation sets the comparer kind; inner types follow their own defaults unless they are themselves the type you are overriding at the outer level.
+
+```csharp
+// outer List → SequenceEquality (default, no attribute needed)
+// inner HashSet → HashSetEquality (default for HashSet)
+public List<HashSet<string>>? Groups { get; set; }
+
+// outer List → HashSetEquality (override — treat the list as a set of sets)
+// inner HashSet → HashSetEquality (propagated from outer override)
+[HashSetEquality]
+public List<HashSet<string>>? GroupsUnordered { get; set; }
+
+// outer HashSet → SequenceEquality (override — order now matters for the outer set)
+// inner List → SequenceEquality (propagated from outer override)
+[SequenceEquality]
+public HashSet<List<int>>? OrderedGroups { get; set; }
+```
+
 ---
 
 ## Multi-dimensional arrays
