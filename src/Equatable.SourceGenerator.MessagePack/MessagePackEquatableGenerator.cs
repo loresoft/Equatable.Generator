@@ -8,9 +8,10 @@ public class MessagePackEquatableGenerator : IIncrementalGenerator
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         EquatableGenerator.RegisterProvider(context,
-            fullyQualifiedMetadataName: "Equatable.Attributes.MessagePackEquatableAttribute",
+            fullyQualifiedMetadataName: "Equatable.Attributes.MessagePack.MessagePackEquatableAttribute",
             trackingName: "MessagePackEquatableAttribute",
-            propertyFilter: IsIncludedMessagePack);
+            propertyFilter: IsIncludedMessagePack,
+            postProcessProperty: EquatableGenerator.InferCollectionComparer);
     }
 
     private static bool IsIncludedMessagePack(IPropertySymbol propertySymbol)

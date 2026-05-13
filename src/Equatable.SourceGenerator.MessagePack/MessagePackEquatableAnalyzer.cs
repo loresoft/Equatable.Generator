@@ -45,7 +45,7 @@ public class MessagePackEquatableAnalyzer : DiagnosticAnalyzer
         typeSymbol.GetAttributes().Any(a => a.AttributeClass is
         {
             Name: "MessagePackEquatableAttribute",
-            ContainingNamespace: { Name: "Attributes", ContainingNamespace.Name: "Equatable" }
+            ContainingNamespace: { Name: "MessagePack", ContainingNamespace: { Name: "Attributes", ContainingNamespace.Name: "Equatable" } }
         });
 
     private static bool HasMessagePackObjectAttribute(INamedTypeSymbol typeSymbol) =>

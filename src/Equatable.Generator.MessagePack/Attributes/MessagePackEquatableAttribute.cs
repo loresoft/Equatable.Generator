@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Equatable.Attributes;
+namespace Equatable.Attributes.MessagePack;
 
 /// <summary>
 /// Marks the class to source generate overrides for Equals and GetHashCode,

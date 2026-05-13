@@ -8,9 +8,10 @@ public class DataContractEquatableGenerator : IIncrementalGenerator
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         EquatableGenerator.RegisterProvider(context,
-            fullyQualifiedMetadataName: "Equatable.Attributes.DataContractEquatableAttribute",
+            fullyQualifiedMetadataName: "Equatable.Attributes.DataContract.DataContractEquatableAttribute",
             trackingName: "DataContractEquatableAttribute",
-            propertyFilter: IsIncludedDataContract);
+            propertyFilter: IsIncludedDataContract,
+            postProcessProperty: EquatableGenerator.InferCollectionComparer);
     }
 
     private static bool IsIncludedDataContract(IPropertySymbol propertySymbol)

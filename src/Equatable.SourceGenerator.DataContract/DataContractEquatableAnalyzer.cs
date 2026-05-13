@@ -45,7 +45,7 @@ public class DataContractEquatableAnalyzer : DiagnosticAnalyzer
         typeSymbol.GetAttributes().Any(a => a.AttributeClass is
         {
             Name: "DataContractEquatableAttribute",
-            ContainingNamespace: { Name: "Attributes", ContainingNamespace.Name: "Equatable" }
+            ContainingNamespace: { Name: "DataContract", ContainingNamespace: { Name: "Attributes", ContainingNamespace.Name: "Equatable" } }
         });
 
     private static bool HasDataContractAttribute(INamedTypeSymbol typeSymbol) =>

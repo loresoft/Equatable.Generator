@@ -24,13 +24,14 @@ public class EquatableGenerator : IIncrementalGenerator
         IncrementalGeneratorInitializationContext context,
         string fullyQualifiedMetadataName,
         string trackingName,
-        Func<IPropertySymbol, bool> propertyFilter)
+        Func<IPropertySymbol, bool> propertyFilter,
+        Func<IPropertySymbol, EquatableProperty, EquatableProperty>? postProcessProperty = null)
     {
         var provider = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 fullyQualifiedMetadataName: fullyQualifiedMetadataName,
                 predicate: SyntacticPredicate,
-                transform: (ctx, ct) => SemanticTransform(ctx, ct, propertyFilter)
+                transform: (ctx, ct) => SemanticTransform(ctx, ct, propertyFilter, postProcessProperty)
             )
             .Where(static item => item is not null)
             .WithTrackingName(trackingName);
@@ -57,7 +58,7 @@ public class EquatableGenerator : IIncrementalGenerator
             || (syntaxNode is StructDeclarationSyntax structDeclaration && !structDeclaration.Modifiers.Any(SyntaxKind.StaticKeyword));
     }
 
-    private static EquatableClass? SemanticTransform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken, Func<IPropertySymbol, bool> propertyFilter)
+    private static EquatableClass? SemanticTransform(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken, Func<IPropertySymbol, bool> propertyFilter, Func<IPropertySymbol, EquatableProperty, EquatableProperty>? postProcessProperty = null)
     {
         if (context.TargetSymbol is not INamedTypeSymbol targetSymbol)
             return null;
@@ -78,7 +79,7 @@ public class EquatableGenerator : IIncrementalGenerator
         var propertySymbols = GetProperties(targetSymbol, baseHashCode == null && baseEquatable == null, propertyFilter);
 
         var propertyArray = propertySymbols
-            .Select(CreateProperty)
+            .Select(p => postProcessProperty != null ? postProcessProperty(p, CreateProperty(p)) : CreateProperty(p))
             .ToArray() ?? [];
 
         // the seed value of the hash code method
@@ -179,6 +180,89 @@ public class EquatableGenerator : IIncrementalGenerator
         }
 
         return new EquatableProperty(propertyName, propertyType, defaultComparer);
+    }
+
+    // Infers the appropriate equality comparer for a property based on its type shape.
+    // Called by adapter generators (DataContractEquatable, MessagePackEquatable) as a
+    // post-processing step so that collection/dictionary properties don't require explicit
+    // [DictionaryEquality] / [SequenceEquality] annotations.
+    // The base [Equatable] generator does NOT call this — developers must be explicit there.
+    public static EquatableProperty InferCollectionComparer(IPropertySymbol propertySymbol, EquatableProperty property)
+    {
+        // Only apply inference when no explicit equality attribute was already resolved
+        if (property.ComparerType != ComparerTypes.Default && property.ComparerType != ComparerTypes.ValueType)
+            return property;
+
+        var inferredExpression = propertySymbol.Type switch
+        {
+            IArrayTypeSymbol arrayType => BuildArrayComparerExpression(arrayType),
+            INamedTypeSymbol namedType when IsDictionary(namedType) || namedType.AllInterfaces.Any(IsDictionary)
+                => BuildInferredCollectionExpression(namedType, ComparerTypes.Dictionary),
+            INamedTypeSymbol namedType when !IsString(namedType)
+                && (IsEnumerable(namedType) || namedType.AllInterfaces.Any(IsEnumerable))
+                => BuildInferredCollectionExpression(namedType, ComparerTypes.Sequence),
+            _ => null
+        };
+
+        if (inferredExpression != null)
+            return property with { ComparerType = ComparerTypes.Expression, ComparerExpression = inferredExpression };
+
+        return property;
+    }
+
+    // Like BuildCollectionComparerExpression but always emits a comparer even when element types are
+    // simple. Used by InferCollectionComparer so that adapter generators always produce structural
+    // equality for collection properties, not EqualityComparer<T>.Default (reference equality).
+    private static string? BuildInferredCollectionExpression(INamedTypeSymbol collectionType, ComparerTypes kind)
+    {
+        var unwrapped = collectionType.IsGenericType
+            && collectionType.OriginalDefinition.SpecialType == SpecialType.None
+            && collectionType.Name == "Nullable"
+            ? collectionType.TypeArguments[0] as INamedTypeSymbol ?? collectionType
+            : collectionType;
+
+        INamedTypeSymbol? dictInterface = IsDictionary(unwrapped) ? unwrapped
+            : unwrapped.AllInterfaces.FirstOrDefault(IsDictionary);
+
+        INamedTypeSymbol? enumInterface = IsEnumerable(unwrapped) ? unwrapped
+            : unwrapped.AllInterfaces.FirstOrDefault(IsEnumerable);
+
+        if (kind == ComparerTypes.Dictionary && dictInterface != null)
+        {
+            var keyType = dictInterface.TypeArguments[0];
+            var valueType = dictInterface.TypeArguments[1];
+            var keyTypeFq = keyType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var valueTypeFq = valueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+            var keyExpr = BuildElementComparerExpression(keyType)
+                ?? $"global::System.Collections.Generic.EqualityComparer<{keyTypeFq}>.Default";
+            var valueExpr = BuildElementComparerExpression(valueType)
+                ?? $"global::System.Collections.Generic.EqualityComparer<{valueTypeFq}>.Default";
+
+            var isReadOnly = IsReadOnlyDictionary(unwrapped)
+                || (IsDictionary(unwrapped) is false && unwrapped.AllInterfaces.Any(IsReadOnlyDictionary));
+
+            var comparerClass = isReadOnly
+                ? "global::Equatable.Comparers.ReadOnlyDictionaryEqualityComparer"
+                : "global::Equatable.Comparers.DictionaryEqualityComparer";
+
+            return $"new {comparerClass}<{keyTypeFq}, {valueTypeFq}>({keyExpr}, {valueExpr})";
+        }
+
+        if (kind == ComparerTypes.Sequence && enumInterface != null)
+        {
+            var elementType = enumInterface.TypeArguments[0];
+            var elementTypeFq = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+            var innerExpr = BuildElementComparerExpression(elementType);
+
+            if (innerExpr != null)
+                return $"new global::Equatable.Comparers.SequenceEqualityComparer<{elementTypeFq}>({innerExpr})";
+
+            return $"global::Equatable.Comparers.SequenceEqualityComparer<{elementTypeFq}>.Default";
+        }
+
+        return null;
     }
 
     // Returns a fully-qualified IEqualityComparer instance expression for a collection type
@@ -517,7 +601,22 @@ public class EquatableGenerator : IIncrementalGenerator
                 ContainingNamespace.Name: "Equatable"
             }
         };
+    }
 
+    // Recognises any *EquatableAttribute from any Equatable adapter namespace:
+    // - Equatable.Attributes (base [Equatable])
+    // - Equatable.Attributes.DataContract ([DataContractEquatable])
+    // - Equatable.Attributes.MessagePack ([MessagePackEquatable])
+    private static bool IsEquatableGeneratorAttribute(AttributeData? a)
+    {
+        if (a?.AttributeClass?.Name.EndsWith("EquatableAttribute") != true)
+            return false;
+
+        var ns = a.AttributeClass.ContainingNamespace;
+        // Equatable.Attributes.*
+        return ns?.ContainingNamespace?.Name == "Equatable" && ns.Name == "Attributes"
+            || ns?.ContainingNamespace?.ContainingNamespace?.Name == "Equatable"
+                && ns.ContainingNamespace?.Name == "Attributes";
     }
 
     private static bool HasEqualityOperator(ITypeSymbol typeSymbol)
@@ -706,8 +805,7 @@ public class EquatableGenerator : IIncrementalGenerator
                 return null;
 
             var attributes = currentSymbol.GetAttributes();
-            if (attributes.Length > 0 && attributes.Any(a => IsKnownAttribute(a)
-                    && a.AttributeClass?.Name.EndsWith("EquatableAttribute") == true))
+            if (attributes.Length > 0 && attributes.Any(IsEquatableGeneratorAttribute))
             {
                 return currentSymbol;
             }
