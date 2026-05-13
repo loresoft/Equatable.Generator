@@ -291,8 +291,8 @@ public class EquatableGenerator : IIncrementalGenerator
             var keyType = dictInterface.TypeArguments[0];
             var valueType = dictInterface.TypeArguments[1];
 
-            var keyExpr = BuildElementComparerExpression(keyType);
-            var valueExpr = BuildElementComparerExpression(valueType);
+            var keyExpr = BuildElementComparerExpression(keyType, dictKind: kind);
+            var valueExpr = BuildElementComparerExpression(valueType, dictKind: kind);
 
             var keyTypeFq = keyType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             var valueTypeFq = valueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -350,7 +350,10 @@ public class EquatableGenerator : IIncrementalGenerator
     // Returns a comparer expression for a single element type, or null if EqualityComparer<T>.Default suffices.
     // Terminates naturally when elementType is not a recognised collection interface.
     // visited guards against self-referential types (e.g. class A : IEnumerable<A>).
-    private static string? BuildElementComparerExpression(ITypeSymbol elementType, HashSet<ITypeSymbol>? visited = null)
+    // dictKind propagates the outer dictionary ordering intent: when OrderedDictionary, any nested
+    // dictionary encountered as a value type also uses OrderedDictionaryEqualityComparer so that
+    // the ordering semantics are consistent at every level of nesting.
+    private static string? BuildElementComparerExpression(ITypeSymbol elementType, HashSet<ITypeSymbol>? visited = null, ComparerTypes dictKind = ComparerTypes.Dictionary)
     {
         if (elementType is IArrayTypeSymbol arrayType)
             return BuildArrayComparerExpression(arrayType);
@@ -375,7 +378,7 @@ public class EquatableGenerator : IIncrementalGenerator
         {
             var isReadOnly = IsReadOnlyDictionary(named)
                 || (IsDictionary(named) is false && named.AllInterfaces.Any(IsReadOnlyDictionary));
-            return BuildDictComparerExpression(asDictInterface, isReadOnly, visited);
+            return BuildDictComparerExpression(asDictInterface, isReadOnly, visited, dictKind);
         }
 
         var asEnumInterface = IsEnumerable(named) ? named
@@ -384,7 +387,7 @@ public class EquatableGenerator : IIncrementalGenerator
         if (asEnumInterface != null)
         {
             var innerType = asEnumInterface.TypeArguments[0];
-            var innerExpr = BuildElementComparerExpression(innerType, visited);
+            var innerExpr = BuildElementComparerExpression(innerType, visited, dictKind);
             var innerTypeFq = innerType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
             var isSet = named.AllInterfaces.Any(i => i is { Name: "ISet" or "IReadOnlySet", IsGenericType: true })
@@ -402,17 +405,25 @@ public class EquatableGenerator : IIncrementalGenerator
         return null;
     }
 
-    private static string BuildDictComparerExpression(INamedTypeSymbol dictInterface, bool isReadOnly, HashSet<ITypeSymbol>? visited = null)
+    private static string BuildDictComparerExpression(INamedTypeSymbol dictInterface, bool isReadOnly, HashSet<ITypeSymbol>? visited = null, ComparerTypes dictKind = ComparerTypes.Dictionary)
     {
         var keyType = dictInterface.TypeArguments[0];
         var valueType = dictInterface.TypeArguments[1];
         var keyTypeFq = keyType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var valueTypeFq = valueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
-        var keyExpr = BuildElementComparerExpression(keyType, visited)
+        var keyExpr = BuildElementComparerExpression(keyType, visited, dictKind)
             ?? $"global::System.Collections.Generic.EqualityComparer<{keyTypeFq}>.Default";
-        var valueExpr = BuildElementComparerExpression(valueType, visited)
+        var valueExpr = BuildElementComparerExpression(valueType, visited, dictKind)
             ?? $"global::System.Collections.Generic.EqualityComparer<{valueTypeFq}>.Default";
+
+        if (dictKind == ComparerTypes.OrderedDictionary)
+        {
+            var orderedClass = isReadOnly
+                ? "global::Equatable.Comparers.OrderedReadOnlyDictionaryEqualityComparer"
+                : "global::Equatable.Comparers.OrderedDictionaryEqualityComparer";
+            return $"new {orderedClass}<{keyTypeFq}, {valueTypeFq}>({keyExpr}, {valueExpr})";
+        }
 
         var comparerClass = isReadOnly
             ? "global::Equatable.Comparers.ReadOnlyDictionaryEqualityComparer"

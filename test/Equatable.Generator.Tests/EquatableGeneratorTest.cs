@@ -983,6 +983,27 @@ public partial class Empty
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
+    [Fact]
+    public Task GenerateSequentialDictionaryEquality_NestedDictPropagatesOrderedComparer()
+    {
+        var source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Container
+{
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, Dictionary<string, int>>? NestedDicts { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
     // Pinned references that must always be present regardless of AppDomain load order.
     // Adapter attribute assemblies and serialization libraries may not be loaded when a test runs first.
     private static readonly IEnumerable<MetadataReference> PinnedReferences =

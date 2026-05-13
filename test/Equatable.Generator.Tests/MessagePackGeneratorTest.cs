@@ -244,4 +244,32 @@ public partial class AllIgnored
         Assert.Empty(diagnostics);
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
+
+    [Fact]
+    public Task GenerateMessagePackEquatableWithSequentialNestedDictPropagation()
+    {
+        var source = @"
+using System.Collections.Generic;
+using MessagePack;
+using Equatable.Attributes;
+using Equatable.Attributes.MessagePack;
+
+namespace Equatable.Entities;
+
+[MessagePackObject]
+[MessagePackEquatable]
+public partial class NestedOrderedContract
+{
+    [Key(0)]
+    public int Id { get; set; }
+
+    [Key(1)]
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, Dictionary<string, int>>? NestedDicts { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<MessagePackEquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
 }
