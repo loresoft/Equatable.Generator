@@ -179,11 +179,29 @@ Every collection attribute works on nested collection types without any extra an
 
 ### Propagation rules
 
-| Outer annotation | Inner `Dictionary<K,V>` | Inner `List<T>` / `T[]` | Inner `HashSet<T>` |
-|---|---|---|---|
-| `[DictionaryEquality]` | `DictionaryEquality` | `SequenceEquality` | `HashSetEquality` |
-| `[DictionaryEquality(sequential:true)]` | `DictionaryEquality(sequential:true)` | `SequenceEquality` | `HashSetEquality` |
-| `[SequenceEquality]` | `DictionaryEquality` | `SequenceEquality` | `HashSetEquality` |
+**`[DictionaryEquality]` on outer property**
+
+| Inner type | Comparer used |
+|---|---|
+| `Dictionary<K,V>` | `DictionaryEquality` |
+| `List<T>` / `T[]` | `SequenceEquality` |
+| `HashSet<T>` | `HashSetEquality` |
+
+**`[DictionaryEquality(sequential:true)]` on outer property**
+
+| Inner type | Comparer used |
+|---|---|
+| `Dictionary<K,V>` | `DictionaryEquality(sequential:true)` (key-sorted, propagated) |
+| `List<T>` / `T[]` | `SequenceEquality` |
+| `HashSet<T>` | `HashSetEquality` |
+
+**`[SequenceEquality]` on outer property**
+
+| Inner type | Comparer used |
+|---|---|
+| `Dictionary<K,V>` | `DictionaryEquality` |
+| `List<T>` / `T[]` | `SequenceEquality` |
+| `HashSet<T>` | `HashSetEquality` |
 
 ```csharp
 // outer dict → key-sorted; inner dict → key-sorted (propagated)
