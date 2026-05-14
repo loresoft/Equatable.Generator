@@ -383,7 +383,7 @@ a.GetHashCode() == b.GetHashCode();  // true  — sort order is deterministic vi
 
 > **Note:** the comparer used by the generated code is `EqualityComparer<K>.Default` unless you override it explicitly via `[EqualityComparer]`. The dictionary's own internal comparer (set at construction time via `new Dictionary<K,V>(myComparer)`) is not visible to the generated equality code. This applies to any custom key comparer — case-insensitive strings are just one example; the same is true for any domain-specific comparison rule (version strings, culture-aware text, normalised identifiers, etc.).
 
-For plain `Dictionary<string, int>` with default comparers, prefer `[DictionaryEquality]` — the O(n) `TryGetValue` path is faster and produces the same result.
+Both `[DictionaryEquality]` and `[DictionaryEquality(sequential: true)]` honour the supplied `keyComparer` correctly in both `Equals` and `GetHashCode`. Prefer `[DictionaryEquality]` — it is O(n) vs O(n log n) for `sequential: true`. Use `sequential: true` only when you need a deterministic, sorted iteration order for snapshot testing or diagnostic output.
 
 **Supported types:** same as `[DictionaryEquality]` — any `IReadOnlyDictionary<K,V>`.
 
