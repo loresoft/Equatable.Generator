@@ -245,6 +245,42 @@ public partial class AllIgnored
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
+    // ── [Key] + [IgnoreEquality] — property serialised but excluded from equality ────────────────────
+    // A property can carry [Key(n)] for MessagePack serialisation while [IgnoreEquality] opts it
+    // out of the generated Equals / GetHashCode.  The generator must honour [IgnoreEquality] even
+    // when [Key(n)] is present.
+
+    [Fact]
+    public Task GenerateMessagePackEquatableIgnoreEqualityOnKey()
+    {
+        var source = @"
+using System;
+using MessagePack;
+using Equatable.Attributes;
+using Equatable.Attributes.MessagePack;
+
+namespace Equatable.Entities;
+
+[MessagePackObject]
+[MessagePackEquatable]
+public partial class PricingContract
+{
+    [Key(0)]
+    public int MarketId { get; set; }
+
+    [Key(1)]
+    public string? Name { get; set; }
+
+    [Key(2)]
+    [IgnoreEquality]
+    public DateTime ReceivedAt { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<MessagePackEquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
     [Fact]
     public Task GenerateMessagePackEquatableWithHashSetEqualityOnListAndArray()
     {

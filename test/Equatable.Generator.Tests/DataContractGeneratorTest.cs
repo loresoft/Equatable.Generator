@@ -245,6 +245,42 @@ public partial class AllIgnored
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
+    // ── [DataMember] + [IgnoreEquality] — property serialised but excluded from equality ─────────────
+    // A property can carry [DataMember] for serialisation while [IgnoreEquality] opts it out
+    // of the generated Equals / GetHashCode.  The generator must honour [IgnoreEquality] even
+    // when [DataMember] is present.
+
+    [Fact]
+    public Task GenerateDataContractEquatableIgnoreEqualityOnDataMember()
+    {
+        var source = @"
+using System;
+using System.Runtime.Serialization;
+using Equatable.Attributes;
+using Equatable.Attributes.DataContract;
+
+namespace Equatable.Entities;
+
+[DataContract]
+[DataContractEquatable]
+public partial class OrderDataContract
+{
+    [DataMember(Order = 0)]
+    public int Id { get; set; }
+
+    [DataMember(Order = 1)]
+    public string? Name { get; set; }
+
+    [DataMember(Order = 2)]
+    [IgnoreEquality]
+    public DateTime LastModified { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<DataContractEquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
     [Fact]
     public Task GenerateDataContractEquatableWithHashSetEqualityOnListAndArray()
     {

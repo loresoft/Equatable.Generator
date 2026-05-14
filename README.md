@@ -231,6 +231,51 @@ public partial class EventContract
 }
 ```
 
+### Serialised but excluded from equality
+
+A property can participate in serialisation while being excluded from equality. This is useful when a field tracks operational metadata — timestamps, audit info, internal sequence numbers — that is transmitted on the wire but must not affect the equality contract of the domain object.
+
+Combine `[DataMember]` or `[Key(n)]` with `[IgnoreEquality]`:
+
+```csharp
+[DataContract]
+[DataContractEquatable]
+public partial class OrderDataContract
+{
+    [DataMember(Order = 0)]
+    public int Id { get; set; }
+
+    [DataMember(Order = 1)]
+    public string? Name { get; set; }
+
+    // Included in serialisation (Order = 2) but excluded from equality.
+    // Two OrderDataContract values are equal when Id and Name match,
+    // regardless of when they were last modified.
+    [DataMember(Order = 2)]
+    [IgnoreEquality]
+    public DateTime LastModified { get; set; }
+}
+```
+
+```csharp
+[MessagePackObject]
+[MessagePackEquatable]
+public partial class PricingContract
+{
+    [Key(0)] public int MarketId { get; set; }
+    [Key(1)] public string? Name { get; set; }
+
+    // Serialised at key 2 but omitted from generated Equals / GetHashCode.
+    [Key(2)]
+    [IgnoreEquality]
+    public DateTime ReceivedAt { get; set; }
+}
+```
+
+The generated `Equals` and `GetHashCode` will not reference `LastModified` or `ReceivedAt` even though both properties are present in the serialised form.
+
+---
+
 ## Collection attributes in detail
 
 ### `[SequenceEquality]` — order-sensitive comparison

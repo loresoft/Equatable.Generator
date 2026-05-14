@@ -26,6 +26,13 @@ public class MessagePackEquatableGenerator : IIncrementalGenerator
         if (attributes.Any(a => a.AttributeClass is { Name: "IgnoreMemberAttribute", ContainingNamespace.Name: "MessagePack" }))
             return false;
 
+        if (attributes.Any(a => a.AttributeClass is
+            {
+                Name: "IgnoreEqualityAttribute",
+                ContainingNamespace: { Name: "Attributes", ContainingNamespace.Name: "Equatable" }
+            }))
+            return false;
+
         return attributes.Any(a => a.AttributeClass is { Name: "KeyAttribute", ContainingNamespace.Name: "MessagePack" });
     }
 }
