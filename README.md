@@ -33,7 +33,7 @@ This library solves the problem with a declarative, annotation-driven approach. 
 | Package | What it does |
 |---|---|
 | `Equatable.Generator` | Generates equality for `[Equatable]` classes, records, structs, and readonly structs. Includes all collection attributes. |
-| `Equatable.Generator.DataContract` | Adapter — includes `[DataMember]`, explicitly excludes `[IgnoreDataMember]`, silently skips unannotated properties (EQ0022 warns) |
+| `Equatable.Generator.DataContract` | Adapter — includes `[DataMember(Order = n)]`, explicitly excludes `[IgnoreDataMember]`, silently skips unannotated properties (EQ0022 warns) |
 | `Equatable.Generator.MessagePack` | Adapter — includes `[Key(n)]`, explicitly excludes `[IgnoreMember]`, silently skips unannotated properties (EQ0023 warns) |
 | `Equatable.Comparers` | Ships the runtime comparers used by the generated code |
 
