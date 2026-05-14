@@ -23,9 +23,9 @@ The correct fix is to implement `IEquatable<T>` manually — but that creates a 
 - **forget a property** — equality silently ignores a field that should matter
 - **include a property by mistake** — a computed or infrastructure field ends up in the comparison
 - **miss the update** — a new property is added to the class but not to the `Equals` / `GetHashCode` methods
-- **break the hash contract** — `Equals` and `GetHashCode` are maintained separately and can drift out of sync; objects that compare equal must produce the same hash code, but nothing enforces this in hand-written code — the result is silent corruption when the object is used as a dictionary key or in a hash set
+- **break the hash contract** — `Equals` and `GetHashCode` are maintained separately and drift out of sync in practice; objects that compare equal must produce the same hash code, but nothing enforces this in hand-written code — the result is silent corruption when the object is used as a dictionary key or in a hash set
 
-These bugs are hard to spot in code review because the missing or extra property is somewhere in a long method body, not at the declaration site.
+These are not theoretical concerns. They appear regularly in real codebases, and they are hard to spot in code review because the missing or extra property is buried in a long method body, not visible at the declaration site.
 
 This library solves the problem with a declarative, annotation-driven approach. Mark the class and each property **at the declaration** — the generator writes `Equals` and `GetHashCode` at compile time, and the analyzer warns immediately when an annotation is missing or misused. The intent is visible right next to the property; there is no separate method to keep in sync.
 
