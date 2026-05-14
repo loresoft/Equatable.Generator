@@ -12,5 +12,9 @@
   </Folder>
   <Project Path="src/Equatable.Comparers/Equatable.Comparers.csproj" />
   <Project Path="src/Equatable.Generator/Equatable.Generator.csproj" />
+  <Project Path="src/Equatable.Generator.DataContract/Equatable.Generator.DataContract.csproj" />
+  <Project Path="src/Equatable.Generator.MessagePack/Equatable.Generator.MessagePack.csproj" />
   <Project Path="src/Equatable.SourceGenerator/Equatable.SourceGenerator.csproj" />
+  <Project Path="src/Equatable.SourceGenerator.DataContract/Equatable.SourceGenerator.DataContract.csproj" />
+  <Project Path="src/Equatable.SourceGenerator.MessagePack/Equatable.SourceGenerator.MessagePack.csproj" />
 </Solution>
