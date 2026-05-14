@@ -528,6 +528,44 @@ The hash contract is critical for using objects as dictionary keys or in hash se
 
 ---
 
+## What's new
+
+### New packages
+
+- **`Equatable.Generator.DataContract`** — adapter generator that reads `[DataMember]` attributes (`System.Runtime.Serialization`). Only properties annotated with `[DataMember]` are included in equality; `[IgnoreDataMember]` and unannotated properties are excluded. A build warning (EQ0022) fires for any public property with no annotation at all, forcing the intent to be explicit.
+- **`Equatable.Generator.MessagePack`** — adapter generator that reads `[Key(n)]` attributes. Only `[Key]` properties are included; `[IgnoreMember]` properties and unannotated properties are excluded. EQ0023 warns on unannotated properties.
+
+### New features
+
+- **`[DictionaryEquality(sequential: true)]`** — key-sorted dictionary comparison. Both sides are sorted by key before comparing, making equality deterministic regardless of insertion order. Useful for snapshots and logs. Propagates into nested dictionary values.
+- **Direction overrides** — apply `[HashSetEquality]` to `List<T>` or `T[]` to make them order-insensitive; apply `[SequenceEquality]` to `HashSet<T>` to force order-sensitive comparison.
+- **Nested collection comparer propagation** — annotate the outer property once; the chosen comparer kind propagates automatically into all nested levels. `Dictionary<K, Dictionary<K2,V>>`, `Dictionary<K, List<V>>`, three-level nesting — all handled with a single annotation.
+- **`MultiDimensionalArrayEqualityComparer`** — structural equality for `T[,]`, `T[,,]`, and higher-rank arrays. Applied automatically as the default — no attribute needed. Checks rank, dimension lengths, and elements in row-major order.
+- **`IReadOnlyDictionary<K,V>` support** — dictionary comparers now accept any `IReadOnlyDictionary<K,V>`, not just `Dictionary<K,V>`.
+- **Base class delegation** — generated `Equals` calls `base.Equals()` when the base class is also an equatable-generated type. Works across adapter boundaries (e.g. `[Equatable]` derived from `[DataContractEquatable]`).
+- **Analyzer diagnostics**
+  - `EQ0020` — `[DataContractEquatable]` without `[DataContract]`
+  - `EQ0021` — `[MessagePackEquatable]` without `[MessagePackObject]`
+  - `EQ0022` — unannotated public property on a `[DataContractEquatable]` type
+  - `EQ0023` — unannotated public property on a `[MessagePackEquatable]` type
+  - `EQ0014` — any collection or equality attribute on a multi-dimensional array (`rank ≥ 2`), where the comparer cannot be overridden
+  - `EQ0015` — `[SequenceEquality]` or `[HashSetEquality]` on a dictionary type
+
+### Bug fixes
+
+- **Empty collections hash differently from null** — a sentinel value is used for empty sequences and dictionaries, satisfying the hash contract (`GetHashCode(empty) != GetHashCode(null)`).
+- **`HashSetEqualityComparer.GetHashCode` is order-independent** — uses a commutative sum, consistent with `SetEquals`-based `Equals`.
+- **`[DictionaryEquality(sequential: true)]` propagates correctly** — key-sorted mode is applied to nested dictionary values, not just the outermost level.
+- **Value types without `==`** — `EqualityComparer<T>.Default` is used instead of direct comparison.
+
+### Improvements
+
+- `Equatable.Generator.DataContract` and `Equatable.Generator.MessagePack` are separate NuGet packages — add only what you need.
+- `IsPublicInstanceProperty` extracted as a shared helper, eliminating duplication between adapter generators.
+- Allocation-free hash code computation for dictionary comparers.
+
+---
+
 ## Requirements
 
 - Target framework .NET Standard 2.0 or greater
