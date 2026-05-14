@@ -18,13 +18,21 @@ var b = new Product { Id = 1, Name = "Widget" };
 Console.WriteLine(a == b);  // false — different objects, even though values are identical
 ```
 
-This library generates correct `Equals` + `GetHashCode` at compile-time — zero runtime overhead, zero boilerplate.
+The correct fix is to implement `IEquatable<T>` manually — but that creates a different set of problems. A hand-written `Equals` method must list every property explicitly, and in a large codebase it is easy to:
+
+- **forget a property** — equality silently ignores a field that should matter
+- **include a property by mistake** — a computed or infrastructure field ends up in the comparison
+- **miss the update** — a new property is added to the class but not to the `Equals` / `GetHashCode` methods
+
+These bugs are hard to spot in code review because the missing or extra property is somewhere in a long method body, not at the declaration site.
+
+This library solves the problem with a declarative, annotation-driven approach. Mark the class and each property **at the declaration** — the generator writes `Equals` and `GetHashCode` at compile time, and the analyzer warns immediately when an annotation is missing or misused. The intent is visible right next to the property; there is no separate method to keep in sync.
 
 ## Packages
 
 | Package | What it does |
 |---|---|
-| `Equatable.Generator` | Generates equality for `[Equatable]` classes/records/structs. Includes all collection attributes. |
+| `Equatable.Generator` | Generates equality for `[Equatable]` classes, records, structs, and readonly structs. Includes all collection attributes. |
 | `Equatable.Generator.DataContract` | Adapter — includes `[DataMember]`, explicitly excludes `[IgnoreDataMember]`, silently skips unannotated properties (EQ0022 warns) |
 | `Equatable.Generator.MessagePack` | Adapter — includes `[Key(n)]`, explicitly excludes `[IgnoreMember]`, silently skips unannotated properties (EQ0023 warns) |
 | `Equatable.Comparers` | Ships the runtime comparers used by the generated code |
@@ -60,7 +68,7 @@ public partial class Product
 }
 ```
 
-The generator writes `Equals` and `GetHashCode` for every public property. Works on `class`, `record`, and `readonly struct`.
+The generator writes `Equals` and `GetHashCode` for every public property. Works on `class`, `record`, `struct`, and `readonly struct`.
 
 ## All attributes at a glance
 
