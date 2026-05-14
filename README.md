@@ -18,6 +18,18 @@ var b = new Product { Id = 1, Name = "Widget" };
 Console.WriteLine(a == b);  // false — different objects, even though values are identical
 ```
 
+In practice, structural comparison — comparing by value rather than by identity — is almost always what developers expect. C# `record` types partially address this: they generate `Equals` and `GetHashCode` automatically for all properties. But the generated equality is only correct for simple value types held directly in the record. **Reference-type properties and collections still use reference equality**, which is silent and easy to miss:
+
+```csharp
+record Order(int Id, List<string> Tags);
+
+var a = new Order(1, new List<string> { "vip" });
+var b = new Order(1, new List<string> { "vip" });
+Console.WriteLine(a == b);  // false — List uses reference equality inside the record
+```
+
+Every reference type nested inside the record requires its own correct `IEquatable<T>` implementation, all the way down the object graph. That obligation compounds quickly in real domain models, and a missing implementation anywhere silently breaks equality without a compile error or warning.
+
 The correct fix is to implement `IEquatable<T>` manually — but that creates a different set of problems. A hand-written `Equals` method must list every property explicitly, and in a large codebase it is easy to:
 
 - **forget a property** — equality silently ignores a field that should matter
