@@ -268,15 +268,15 @@ public HashSet<List<int>>? OrderedGroups { get; set; }
 
 ## Multi-dimensional arrays
 
-`T[,]`, `T[,,]`, and higher-rank arrays are supported via `MultiDimensionalArrayEqualityComparer<T>` — no attribute needed, just like `T[]`.
+`T[,]`, `T[,,]`, and higher-rank arrays are handled by `MultiDimensionalArrayEqualityComparer<T>` — no attribute needed, just like `T[]`.
 
-**Default for:** any array with rank ≥ 2 — `T[,]`, `T[,,]`, and beyond. Single-dimensional `T[]` uses `SequenceEqualityComparer` instead.
+**Default for:** any array with rank ≥ 2. Single-dimensional `T[]` uses `SequenceEqualityComparer` instead.
 
 ```csharp
-// 2D array — MultiDimensionalArrayEqualityComparer used by default, no attribute needed
+// 2D array — MultiDimensionalArrayEqualityComparer by default, no attribute needed
 public int[,] Grid { get; set; }
 
-// 3D array — same default, rank detected automatically
+// 3D array — same default, rank detected automatically at compile time
 public double[,,] Cube { get; set; }
 ```
 
@@ -295,6 +295,28 @@ var c = new int[,] { { 1, 3 }, { 2, 4 } };  // transposed
 
 var d = new int[,,] { { { 1, 2 }, { 3, 4 } } };
 // a != d ✓  (rank 2 vs rank 3 — always unequal regardless of content)
+```
+
+### Overrides for multi-dimensional arrays
+
+The outer comparer is always `MultiDimensionalArrayEqualityComparer` for rank ≥ 2 — it cannot be swapped for `SequenceEqualityComparer` or `HashSetEqualityComparer`. The only supported override is **element-level** via `[EqualityComparer]`:
+
+```csharp
+// outer: MultiDimensionalArrayEqualityComparer (cannot be changed)
+// inner elements: OrdinalIgnoreCase comparer (propagated into element comparison)
+[EqualityComparer(typeof(StringComparer), nameof(StringComparer.OrdinalIgnoreCase))]
+public string[,] Labels { get; set; }
+```
+
+Single-dimensional `T[]` is more flexible — it supports all comparer overrides:
+
+```csharp
+// T[] default: SequenceEquality (order matters)
+public int[] Scores { get; set; }
+
+// T[] override: HashSetEquality (order no longer matters)
+[HashSetEquality]
+public int[] GroupIds { get; set; }
 ```
 
 ---
