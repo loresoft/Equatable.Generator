@@ -175,46 +175,61 @@ public Dictionary<string, int>? RankByRegion { get; set; }
 
 ## Nested collections
 
-Every collection attribute works on nested collection types without any extra annotation. The outer attribute propagates its intent inward; inner types that have their own default use it.
+Annotate the **outer property once** — the generator infers the right comparer for every nested level automatically.
 
-### Propagation rules
-
-**`[DictionaryEquality]` on outer property**
-
-| Inner type | Comparer used |
-|---|---|
-| `Dictionary<K,V>` | `DictionaryEquality` |
-| `List<T>` / `T[]` | `SequenceEquality` |
-| `HashSet<T>` | `HashSetEquality` |
-
-**`[DictionaryEquality(sequential:true)]` on outer property**
-
-| Inner type | Comparer used |
-|---|---|
-| `Dictionary<K,V>` | `DictionaryEquality(sequential:true)` (key-sorted, propagated) |
-| `List<T>` / `T[]` | `SequenceEquality` |
-| `HashSet<T>` | `HashSetEquality` |
-
-**`[SequenceEquality]` on outer property**
-
-| Inner type | Comparer used |
-|---|---|
-| `Dictionary<K,V>` | `DictionaryEquality` |
-| `List<T>` / `T[]` | `SequenceEquality` |
-| `HashSet<T>` | `HashSetEquality` |
+### `[DictionaryEquality]`
 
 ```csharp
-// outer dict → key-sorted; inner dict → key-sorted (propagated)
+// outer: DictionaryEquality
+// inner Dictionary: DictionaryEquality (propagated)
+public Dictionary<string, Dictionary<string, int>>? ByRegion { get; set; }
+
+// outer: DictionaryEquality
+// inner List: SequenceEquality (default for List<T>)
+public Dictionary<string, List<int>>? ScoresByRegion { get; set; }
+
+// outer: DictionaryEquality
+// inner HashSet: HashSetEquality (default for HashSet<T>)
+public Dictionary<string, HashSet<string>>? TagsByRegion { get; set; }
+```
+
+### `[DictionaryEquality(sequential: true)]`
+
+Key-sorted comparison propagates into every nested dictionary level.
+
+```csharp
+// outer: key-sorted dict
+// inner Dictionary: key-sorted (propagated)
 [DictionaryEquality(sequential: true)]
 public Dictionary<string, Dictionary<string, int>>? ByRegionAndTeam { get; set; }
 
-// outer dict → key-sorted; inner list → order-sensitive (default for List<T>)
+// outer: key-sorted dict
+// inner List: SequenceEquality (default for List<T>)
 [DictionaryEquality(sequential: true)]
 public Dictionary<string, List<int>>? HistoryByRegion { get; set; }
 
 // three levels deep — propagation goes all the way
 [DictionaryEquality(sequential: true)]
 public Dictionary<string, Dictionary<string, Dictionary<string, int>>>? ThreeLevelConfig { get; set; }
+```
+
+### `[SequenceEquality]`
+
+```csharp
+// outer: SequenceEquality (order matters for the outer list)
+// inner Dictionary: DictionaryEquality (default for Dictionary<K,V>)
+[SequenceEquality]
+public List<Dictionary<string, int>>? Steps { get; set; }
+
+// outer: SequenceEquality
+// inner List: SequenceEquality (default for List<T>)
+[SequenceEquality]
+public List<List<int>>? Matrix { get; set; }
+
+// outer: SequenceEquality
+// inner HashSet: HashSetEquality (default for HashSet<T>)
+[SequenceEquality]
+public List<HashSet<string>>? Groups { get; set; }
 ```
 
 ### Explicit overrides are always transparent
