@@ -60,7 +60,7 @@ The generator writes `Equals` and `GetHashCode` for every public property. Works
 | `[IgnoreEquality]` | Skip this property | — |
 | `[StringEquality(StringComparison.X)]` | `StringComparer.X.Equals(a, b)` | — |
 | `[EqualityComparer(typeof(T))]` | `T.Default.Equals(a, b)` — any custom comparer | — |
-| `[SequenceEquality]` | `SequenceEqualityComparer` — element order matters | `List<T>`, `T[]` |
+| `[SequenceEquality]` | `SequenceEqualityComparer` — element order matters | `List<T>`, `T[]`, `T[,]`, `T[,,]` |
 | `[HashSetEquality]` | `HashSetEqualityComparer` — element order ignored | `HashSet<T>` |
 | `[DictionaryEquality]` | `ReadOnlyDictionaryEqualityComparer` — key-value equality | `Dictionary<K,V>` |
 | `[DictionaryEquality(sequential:true)]` | `OrderedReadOnlyDictionaryEqualityComparer` — key-sorted | — |
@@ -268,17 +268,15 @@ public HashSet<List<int>>? OrderedGroups { get; set; }
 
 ## Multi-dimensional arrays
 
-`T[,]`, `T[,,]`, and higher-rank arrays are supported via `MultiDimensionalArrayEqualityComparer<T>`. Use `[SequenceEquality]` to opt in.
+`T[,]`, `T[,,]`, and higher-rank arrays are supported via `MultiDimensionalArrayEqualityComparer<T>` — no attribute needed, just like `T[]`.
 
-**Supported types:** any `System.Array` with rank ≥ 2 — `T[,]`, `T[,,]`, and beyond. Single-dimensional `T[]` uses the standard `[SequenceEquality]` path instead.
+**Default for:** any array with rank ≥ 2 — `T[,]`, `T[,,]`, and beyond. Single-dimensional `T[]` uses `SequenceEqualityComparer` instead.
 
 ```csharp
-// 2D array — [SequenceEquality] required (no default for multi-dimensional arrays)
-[SequenceEquality]
+// 2D array — MultiDimensionalArrayEqualityComparer used by default, no attribute needed
 public int[,] Grid { get; set; }
 
-// 3D array — same attribute, rank detected automatically
-[SequenceEquality]
+// 3D array — same default, rank detected automatically
 public double[,,] Cube { get; set; }
 ```
 
