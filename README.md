@@ -8,40 +8,54 @@ Source generator for `Equals` and `GetHashCode` with attribute-based control of 
 
 [![Equatable.Generator](https://img.shields.io/nuget/v/Equatable.Generator.svg)](https://www.nuget.org/packages/Equatable.Generator/)
 
-## What it does
+## Overview
 
-In C# every class inherits `Equals` from `object`, which compares **references** (memory addresses), not values:
+By default, C# classes inherit `Equals` from `object`, which compares object references rather than values:
 
 ```csharp
 var a = new Product { Id = 1, Name = "Widget" };
 var b = new Product { Id = 1, Name = "Widget" };
-Console.WriteLine(a == b);  // false — different objects, even though values are identical
+Console.WriteLine(a == b);  // false — distinct instances, even though all values are identical
 ```
 
-In practice, structural comparison — comparing by value rather than by identity — is almost always what developers expect. C# `record` types partially address this: they generate `Equals` and `GetHashCode` automatically for all properties. But the generated equality is only correct for simple value types held directly in the record. **Reference-type properties and collections still use reference equality**, which is silent and easy to miss:
+Structural equality — comparing objects by their field values rather than by identity — is what most application code requires. C# `record` types partially address this by generating `Equals` and `GetHashCode` from all properties automatically. However, the generated equality is only structurally correct for value types and `string`. **Reference-type properties and collection properties still fall back to reference equality**, which is silent and easily overlooked:
 
 ```csharp
 record Order(int Id, List<string> Tags);
 
 var a = new Order(1, new List<string> { "vip" });
 var b = new Order(1, new List<string> { "vip" });
-Console.WriteLine(a == b);  // false — List uses reference equality inside the record
+Console.WriteLine(a == b);  // false — List<T> uses reference equality inside the record
 ```
 
-Every reference type nested inside the record requires its own correct `IEquatable<T>` implementation, all the way down the object graph. That obligation compounds quickly in real domain models, and a missing implementation anywhere silently breaks equality without a compile error or warning.
+Every reference type in the object graph requires its own correct `IEquatable<T>` implementation. That obligation compounds rapidly in real domain models, and a missing implementation anywhere produces incorrect equality silently, with no compile-time indication.
 
-Note: `string` properties appear to work correctly in records because `string` already implements `IEquatable<string>` with value semantics — not because records provide any special handling. Any reference type that does not implement `IEquatable<T>` (`List<T>`, `Dictionary<K,V>`, custom classes) will silently use reference equality.
+> `string` properties behave correctly inside records because `string` implements `IEquatable<string>` with value semantics. This is not special treatment by the record infrastructure — any reference type that does not implement `IEquatable<T>` (such as `List<T>`, `Dictionary<K,V>`, or a plain class) will silently use reference equality.
 
-The correct fix is to implement `IEquatable<T>` manually — but that creates a different set of problems. A hand-written `Equals` method must list every property explicitly, and in a large codebase it is easy to:
+The standard remedy is a manual `IEquatable<T>` implementation, but this introduces a different category of problems. A hand-written `Equals` method enumerates every property explicitly, and in any non-trivial codebase the following failure modes are common in practice:
 
-- **forget a property** — equality silently ignores a field that should matter
-- **include a property by mistake** — a computed or infrastructure field ends up in the comparison
-- **miss the update** — a new property is added to the class but not to the `Equals` / `GetHashCode` methods
-- **break the hash contract** — `Equals` and `GetHashCode` are maintained separately and drift out of sync in practice; objects that compare equal must produce the same hash code, but nothing enforces this in hand-written code — the result is silent corruption when the object is used as a dictionary key or in a hash set
+- **Omitted property** — a field is absent from `Equals`, causing equality to silently disregard data that should influence the result.
+- **Unintended inclusion** — a computed or infrastructure property is included, producing incorrect comparisons.
+- **Stale implementation** — a new property is added to the type but not reflected in `Equals` or `GetHashCode`.
+- **Hash contract violation** — `Equals` and `GetHashCode` are maintained independently and diverge over time. The contract that equal objects must produce equal hash codes is not enforced by the compiler; a violation causes silent corruption when instances are used as dictionary keys or hash set members.
 
-These are not theoretical concerns. They appear regularly in real codebases, and they are hard to spot in code review because the missing or extra property is buried in a long method body, not visible at the declaration site.
+These defects are difficult to detect in code review because the missing or extraneous property is buried inside a method body rather than visible at the property declaration.
 
-This library solves the problem with a declarative, annotation-driven approach. Mark the class and each property **at the declaration** — the generator writes `Equals` and `GetHashCode` at compile time, and the analyzer warns immediately when an annotation is missing or misused. The intent is visible right next to the property; there is no separate method to keep in sync.
+This library addresses the problem through a declarative, annotation-driven approach. Equality intent is expressed directly on each property at its declaration site. The source generator produces correct `Equals` and `GetHashCode` implementations at compile time, and the accompanying Roslyn analyzer emits build warnings when an annotation is absent or incorrectly applied. There is no separate method body to maintain or keep consistent.
+
+```csharp
+[Equatable]
+public partial class Product
+{
+    public int Id { get; set; }
+
+    [StringEquality(StringComparison.OrdinalIgnoreCase)]
+    public string? Name { get; set; }
+
+    [IgnoreEquality]           // excluded — computed, not part of identity
+    public decimal TaxAmount { get; set; }
+}
+```
 
 ## Packages
 
@@ -83,7 +97,7 @@ public partial class Product
 }
 ```
 
-The generator writes `Equals` and `GetHashCode` for every public property. Works on `class`, `record`, `struct`, and `readonly struct`.
+The generator produces `Equals` and `GetHashCode` implementations covering every public property. Supported type declarations: `class`, `record`, `struct`, and `readonly struct`.
 
 ## All attributes at a glance
 
@@ -99,12 +113,12 @@ These attributes live in `Equatable.Attributes` and control how each property is
 
 | Attribute | What it generates | Default for |
 |---|---|---|
-| `[IgnoreEquality]` | Skip this property | — |
+| `[IgnoreEquality]` | Exclude this property from equality | — |
 | `[StringEquality(StringComparison.X)]` | `StringComparer.X.Equals(a, b)` | — |
-| `[EqualityComparer(typeof(T))]` | `T.Default.Equals(a, b)` — any custom comparer | — |
+| `[EqualityComparer(typeof(T))]` | `T.Default.Equals(a, b)` — any custom `IEqualityComparer<T>` | — |
 | `[ReferenceEquality]` | `Object.ReferenceEquals(a, b)` | — |
-| `[SequenceEquality]` | `SequenceEqualityComparer` — element order matters | `List<T>`, `T[]`, `T[,]`, `T[,,]` |
-| `[HashSetEquality]` | `HashSetEqualityComparer` — element order ignored | `HashSet<T>` |
+| `[SequenceEquality]` | `SequenceEqualityComparer` — order-sensitive element comparison | `List<T>`, `T[]`, `T[,]`, `T[,,]` |
+| `[HashSetEquality]` | `HashSetEqualityComparer` — order-insensitive element comparison | `HashSet<T>` |
 | `[DictionaryEquality]` | `DictionaryEqualityComparer` — key-value equality, insertion order irrelevant | `Dictionary<K,V>` |
 | `[DictionaryEquality(sequential:true)]` | `OrderedDictionaryEqualityComparer` — key-sorted comparison | — |
 
@@ -114,7 +128,7 @@ These attributes live in `Equatable.Attributes` and control how each property is
 |---|---|---|
 | `[DataContractEquatable]` | `Equatable.Generator.DataContract` | Triggers generation; reads `[DataMember]` to select properties |
 
-Property selection uses `System.Runtime.Serialization` attributes — these are not part of `Equatable.Generator.DataContract` itself, they come from the BCL or the serialisation library you already use:
+Property selection is driven by `System.Runtime.Serialization` attributes, which come from the BCL or the serialisation library already in use:
 
 | Attribute | Source | Effect |
 |---|---|---|
@@ -122,7 +136,7 @@ Property selection uses `System.Runtime.Serialization` attributes — these are 
 | `[IgnoreDataMember]` | `System.Runtime.Serialization` | Explicitly exclude this property |
 | `[IgnoreEquality]` | `Equatable.Attributes` | Explicitly exclude this property |
 
-All property-level equality attributes from `Equatable.Generator` (`[SequenceEquality]`, `[DictionaryEquality]`, `[StringEquality]`, `[EqualityComparer]`, `[ReferenceEquality]`) work as overrides on `[DataMember]` properties. Collection comparers are inferred automatically when no override is present.
+All property-level equality attributes from `Equatable.Generator` (`[SequenceEquality]`, `[DictionaryEquality]`, `[StringEquality]`, `[EqualityComparer]`, `[ReferenceEquality]`) are accepted as overrides on `[DataMember]` properties. Collection comparers are inferred automatically from the property type when no override is present.
 
 ### `Equatable.Generator.MessagePack` — class-level trigger
 
@@ -130,7 +144,7 @@ All property-level equality attributes from `Equatable.Generator` (`[SequenceEqu
 |---|---|---|
 | `[MessagePackEquatable]` | `Equatable.Generator.MessagePack` | Triggers generation; reads `[Key(n)]` to select properties |
 
-Property selection uses MessagePack attributes — these come from the `MessagePack` package you already use:
+Property selection is driven by MessagePack attributes from the `MessagePack` package already in use:
 
 | Attribute | Source | Effect |
 |---|---|---|
@@ -138,11 +152,11 @@ Property selection uses MessagePack attributes — these come from the `MessageP
 | `[IgnoreMember]` | `MessagePack` | Explicitly exclude this property |
 | `[IgnoreEquality]` | `Equatable.Attributes` | Explicitly exclude this property |
 
-All property-level equality attributes from `Equatable.Generator` work as overrides on `[Key(n)]` properties. Collection comparers are inferred automatically when no override is present.
+All property-level equality attributes from `Equatable.Generator` are accepted as overrides on `[Key(n)]` properties. Collection comparers are inferred automatically when no override is present.
 
 ## Adapter generators
 
-Use `[DataContractEquatable]` or `[MessagePackEquatable]` when your class is already annotated for serialisation. The adapter reads the existing serialisation attributes to decide which properties to include — no duplication of intent required.
+Use `[DataContractEquatable]` or `[MessagePackEquatable]` when the type is already annotated for serialisation. The adapter derives property selection from the existing serialisation attributes, requiring no duplication of intent.
 
 ### Property selection
 
@@ -151,11 +165,11 @@ Use `[DataContractEquatable]` or `[MessagePackEquatable]` when your class is alr
 | `[DataContractEquatable]` | `[DataMember]` | `[IgnoreDataMember]` or `[IgnoreEquality]` | all other public properties |
 | `[MessagePackEquatable]` | `[Key(n)]` | `[IgnoreMember]` or `[IgnoreEquality]` | all other public properties |
 
-Properties with no annotation at all are silently excluded from equality. If that omission was accidental the build will warn (EQ0022 / EQ0023) — add the inclusion or exclusion attribute to make the intent explicit.
+Public properties that carry no annotation are silently excluded from equality. When that omission is unintentional, the build emits EQ0022 or EQ0023. Resolve the warning by adding the appropriate inclusion or explicit exclusion attribute.
 
-### Comparer inference — no equality attributes needed on collection properties
+### Comparer inference
 
-Adapters auto-infer the correct collection comparer from the property type, so `[DataMember]` / `[Key(n)]` properties never need an explicit `[SequenceEquality]`, `[DictionaryEquality]`, or `[HashSetEquality]`. The same defaults apply as for `[Equatable]`: `List<T>` / `T[]` → `SequenceEquality`; `HashSet<T>` → `HashSetEquality`; `Dictionary<K,V>` → `DictionaryEquality`.
+Adapter generators infer the correct collection comparer from the property type automatically. Properties annotated with `[DataMember]` or `[Key(n)]` do not require an explicit `[SequenceEquality]`, `[DictionaryEquality]`, or `[HashSetEquality]`. The same defaults apply as for `[Equatable]`: `List<T>` / `T[]` → `SequenceEquality`; `HashSet<T>` → `HashSetEquality`; `Dictionary<K,V>` → `DictionaryEquality`.
 
 ```csharp
 [DataContract]
@@ -164,10 +178,10 @@ public partial class EventContract
 {
     [DataMember(Order = 0)] public int EventId { get; set; }
 
-    // List<T> → SequenceEqualityComparer inferred — no attribute needed
+    // List<T> → SequenceEqualityComparer inferred — no attribute required
     [DataMember(Order = 1)] public List<string>? Tags { get; set; }
 
-    // Dictionary<K,V> → DictionaryEqualityComparer inferred — no attribute needed
+    // Dictionary<K,V> → DictionaryEqualityComparer inferred — no attribute required
     [DataMember(Order = 2)] public Dictionary<string, int>? Scores { get; set; }
 
     [IgnoreDataMember]
@@ -183,7 +197,7 @@ public partial class LiveScore
     [Key(0)] public int MatchId { get; set; }
     [Key(1)] public int HomeScore { get; set; }
 
-    // HashSet<T> → HashSetEqualityComparer inferred — no attribute needed
+    // HashSet<T> → HashSetEqualityComparer inferred — no attribute required
     [Key(2)] public HashSet<string>? Tags { get; set; }
 
     [IgnoreMember]
@@ -193,14 +207,14 @@ public partial class LiveScore
 
 ### Overriding the inferred comparer
 
-Explicit equality attributes take priority over inference. All the same attributes from the `[Equatable]` table work on adapter-included properties:
+Explicit equality attributes take precedence over inference. All attributes from the `[Equatable]` table are applicable to adapter-included properties:
 
 ```csharp
 [DataContract]
 [DataContractEquatable]
 public partial class EventContract
 {
-    // Override: treat list as a set (order irrelevant)
+    // Override: treat list as a set — element order is irrelevant
     [DataMember(Order = 0)]
     [HashSetEquality]
     public List<string>? PermissionCodes { get; set; }
@@ -219,9 +233,9 @@ public partial class EventContract
 
 ## Collection attributes in detail
 
-### `[SequenceEquality]` — order matters
+### `[SequenceEquality]` — order-sensitive comparison
 
-**Default for:** `List<T>`, `T[]` — no attribute needed on these types.
+**Default for:** `List<T>`, `T[]` — no attribute required on these types.
 
 **Supported types:** any `IEnumerable<T>` — `List<T>`, `T[]`, `ICollection<T>`, `IReadOnlyList<T>`, `IEnumerable<T>`, `HashSet<T>` (via override), and more.
 
@@ -233,18 +247,18 @@ public int[]? Scores { get; set; }           // SequenceEquality by default
 `["A","B","C"]` equals `["A","B","C"]` ✓  
 `["A","B","C"]` does NOT equal `["C","B","A"]` ✓
 
-**Direction override:** apply to `HashSet<T>` to force order-sensitive comparison on a normally unordered set.
+**Direction override:** apply to `HashSet<T>` to enforce order-sensitive comparison on a normally unordered type.
 
 ```csharp
 [SequenceEquality]
-public HashSet<string>? OrderedTags { get; set; }  // override: order now matters
+public HashSet<string>? OrderedTags { get; set; }  // override: element order now matters
 ```
 
 ---
 
-### `[HashSetEquality]` — order does not matter
+### `[HashSetEquality]` — order-insensitive comparison
 
-**Default for:** `HashSet<T>` — no attribute needed on plain hash sets.
+**Default for:** `HashSet<T>` — no attribute required on plain hash sets.
 
 **Supported types:** any `IEnumerable<T>` — `HashSet<T>`, `ISet<T>`, `IReadOnlySet<T>`, `List<T>`, `T[]` (via override), and more. When the value implements `ISet<T>`, `SetEquals` is called directly (fast path). Otherwise a temporary `HashSet<T>` is constructed for the comparison.
 
@@ -254,18 +268,18 @@ public HashSet<string>? Roles { get; set; }  // HashSetEquality by default
 
 `{"admin","editor"}` equals `{"editor","admin"}` ✓
 
-**Direction override:** apply to `List<T>` or `T[]` to make them order-insensitive.
+**Direction override:** apply to `List<T>` or `T[]` to make the comparison order-insensitive.
 
 ```csharp
 [HashSetEquality]
-public List<string>? PermissionCodes { get; set; }  // override: order no longer matters
+public List<string>? PermissionCodes { get; set; }  // override: element order no longer matters
 ```
 
 ---
 
-### `[DictionaryEquality]` — insertion order does not matter
+### `[DictionaryEquality]` — key-value comparison, insertion order irrelevant
 
-**Default for:** `Dictionary<K,V>` — no attribute needed on plain dictionaries.
+**Default for:** `Dictionary<K,V>` — no attribute required on plain dictionaries.
 
 **Supported types:** any `IReadOnlyDictionary<K,V>` — `Dictionary<K,V>`, `IReadOnlyDictionary<K,V>`, `SortedDictionary<K,V>`, `ConcurrentDictionary<K,V>`, and more.
 
@@ -277,7 +291,7 @@ public Dictionary<string, double>? Prices { get; set; }  // DictionaryEquality b
 
 ### `[DictionaryEquality(sequential: true)]` — key-sorted comparison
 
-Both sides are sorted by key before comparison. Insertion order is still irrelevant, but the result is deterministic — useful for snapshots and logs.
+Both sides are sorted by key before comparison. Insertion order is irrelevant, and the result is deterministic — useful for snapshot testing and diagnostic logging.
 
 **Supported types:** same as `[DictionaryEquality]` — any `IReadOnlyDictionary<K,V>`.
 
@@ -290,7 +304,7 @@ public Dictionary<string, int>? RankByRegion { get; set; }
 
 ## Nested collections
 
-Annotate the **outer property once** — the generator infers the right comparer for every nested level automatically.
+Annotate the **outer property once** — the generator selects the appropriate comparer for every nested level automatically.
 
 ### `[DictionaryEquality]`
 
@@ -323,7 +337,7 @@ public Dictionary<string, Dictionary<string, int>>? ByRegionAndTeam { get; set; 
 [DictionaryEquality(sequential: true)]
 public Dictionary<string, List<int>>? HistoryByRegion { get; set; }
 
-// three levels deep — propagation goes all the way
+// three levels deep — propagation applies at every level
 [DictionaryEquality(sequential: true)]
 public Dictionary<string, Dictionary<string, Dictionary<string, int>>>? ThreeLevelConfig { get; set; }
 ```
@@ -331,7 +345,7 @@ public Dictionary<string, Dictionary<string, Dictionary<string, int>>>? ThreeLev
 ### `[SequenceEquality]`
 
 ```csharp
-// outer: SequenceEquality (order matters for the outer list)
+// outer: SequenceEquality (element order matters for the outer list)
 // inner Dictionary: DictionaryEquality (default for Dictionary<K,V>)
 [SequenceEquality]
 public List<Dictionary<string, int>>? Steps { get; set; }
@@ -347,9 +361,9 @@ public List<List<int>>? Matrix { get; set; }
 public List<HashSet<string>>? Groups { get; set; }
 ```
 
-### Explicit overrides are always transparent
+### Explicit overrides propagate transparently
 
-Annotations on a property are the single source of truth — they are never implied or hidden. If a `List<T>` property has no attribute, it uses `SequenceEquality`. If it has `[HashSetEquality]`, it uses `HashSetEquality`. There is no magic inference that could surprise you.
+The annotation on a property is the sole source of truth. A `List<T>` property with no attribute uses `SequenceEquality`; with `[HashSetEquality]` it uses `HashSetEquality`. There is no implicit inference that could produce unexpected results.
 
 ```csharp
 public List<string>? Tags { get; set; }          // SequenceEquality (default)
@@ -361,19 +375,19 @@ public List<string>? Permissions { get; set; }   // HashSetEquality (explicit ov
 public HashSet<string>? OrderedSet { get; set; } // SequenceEquality (explicit override)
 ```
 
-The same logic applies inside nested collections. The outer annotation sets the comparer kind; inner types follow their own defaults unless they are themselves the type you are overriding at the outer level.
+The same principle applies inside nested collections. The outer annotation establishes the comparer kind; inner types follow their own defaults unless the outer annotation overrides them.
 
 ```csharp
-// outer List → SequenceEquality (default, no attribute needed)
-// inner HashSet → HashSetEquality (default for HashSet)
+// outer List → SequenceEquality (default)
+// inner HashSet → HashSetEquality (default for HashSet<T>)
 public List<HashSet<string>>? Groups { get; set; }
 
-// outer List → HashSetEquality (override — treat the list as a set of sets)
+// outer List → HashSetEquality (override — the list is treated as a set of sets)
 // inner HashSet → HashSetEquality (propagated from outer override)
 [HashSetEquality]
 public List<HashSet<string>>? GroupsUnordered { get; set; }
 
-// outer HashSet → SequenceEquality (override — order now matters for the outer set)
+// outer HashSet → SequenceEquality (override — element order now matters)
 // inner List → SequenceEquality (propagated from outer override)
 [SequenceEquality]
 public HashSet<List<int>>? OrderedGroups { get; set; }
@@ -383,15 +397,15 @@ public HashSet<List<int>>? OrderedGroups { get; set; }
 
 ## Multi-dimensional arrays
 
-`T[,]`, `T[,,]`, and higher-rank arrays are handled by `MultiDimensionalArrayEqualityComparer<T>` — no attribute needed, just like `T[]`.
+`T[,]`, `T[,,]`, and higher-rank arrays are handled automatically by `MultiDimensionalArrayEqualityComparer<T>` — no attribute is required.
 
 **Default for:** any array with rank ≥ 2. Single-dimensional `T[]` uses `SequenceEqualityComparer` instead.
 
 ```csharp
-// 2D array — MultiDimensionalArrayEqualityComparer by default, no attribute needed
+// 2D array — MultiDimensionalArrayEqualityComparer applied by default
 public int[,] Grid { get; set; }
 
-// 3D array — same default, rank detected automatically at compile time
+// 3D array — rank is detected at compile time; same default applies
 public double[,,] Cube { get; set; }
 ```
 
@@ -412,11 +426,11 @@ var d = new int[,,] { { { 1, 2 }, { 3, 4 } } };
 // a != d ✓  (rank 2 vs rank 3 — always unequal regardless of content)
 ```
 
-### Overrides for multi-dimensional arrays
+### Comparer overrides for multi-dimensional arrays
 
-The outer comparer is always `MultiDimensionalArrayEqualityComparer` for rank ≥ 2 — it cannot be swapped for `SequenceEqualityComparer` or `HashSetEqualityComparer`. There is no supported element-level override: `[EqualityComparer]` on a `T[,]` property bypasses `MultiDimensionalArrayEqualityComparer` entirely and compares the array as a single reference, which is incorrect. Use the default and rely on element type's own equality instead.
+`MultiDimensionalArrayEqualityComparer` is always used for rank ≥ 2 and cannot be replaced with `SequenceEqualityComparer` or `HashSetEqualityComparer`. Applying `[EqualityComparer(typeof(MyComparer))]` to a `T[,]` property does not wrap the comparer around `MultiDimensionalArrayEqualityComparer` — it bypasses it entirely, passing the array instance as a single opaque value to the custom comparer. The effective behaviour is reference equality, which is almost certainly incorrect. Rely on the default and ensure the element type defines its own correct equality.
 
-Single-dimensional `T[]` is more flexible — it supports all comparer overrides:
+Single-dimensional `T[]` supports the full range of comparer overrides:
 
 ```csharp
 // T[] default: SequenceEquality (order matters)
@@ -429,9 +443,9 @@ public int[] GroupIds { get; set; }
 
 ---
 
-## `[EqualityComparer]` — fully custom comparer
+## `[EqualityComparer]` — custom comparer
 
-When no built-in attribute fits, write your own `IEqualityComparer<T>`:
+When no built-in attribute is appropriate, supply a custom `IEqualityComparer<T>`:
 
 ```csharp
 public sealed class CountOnlyComparer : IEqualityComparer<Dictionary<string, int>?>
@@ -450,7 +464,7 @@ public Dictionary<string, int>? AssetWeights { get; set; }
 
 ## Build-time diagnostics
 
-The analyzer validates every `[Equatable]` class at compile time and emits warnings when attributes are missing or misused. These diagnostics are designed to surface mistakes that would otherwise produce silent wrong behavior at runtime.
+The Roslyn analyzer validates every `[Equatable]` type at compile time and emits warnings when attributes are absent or incorrectly applied. These diagnostics are designed to surface mistakes that would otherwise produce silent incorrect behaviour at runtime.
 
 ### Missing attribute warnings
 
@@ -463,13 +477,13 @@ The analyzer validates every `[Equatable]` class at compile time and emits warni
 | `EQ0022` | `[DataContractEquatable]` | Public property has no `[DataMember]`, `[IgnoreDataMember]`, or `[IgnoreEquality]` | — |
 | `EQ0023` | `[MessagePackEquatable]` | Public property has no `[Key(n)]`, `[IgnoreMember]`, or `[IgnoreEquality]` | — |
 
-**EQ0001 / EQ0002** only apply to `[Equatable]` classes, where every public property is included by default and must be explicitly annotated for collection/dictionary types. Adapter generators (`[DataContractEquatable]`, `[MessagePackEquatable]`) auto-infer the correct comparer from the property type, so collection properties annotated with `[DataMember]` or `[Key(n)]` never need `[SequenceEquality]` or `[DictionaryEquality]`.
+**EQ0001 / EQ0002** apply exclusively to `[Equatable]` types, where all public properties are included by default and collection or dictionary types must be explicitly annotated. Adapter generators infer the correct comparer automatically, so `[DataMember]` and `[Key(n)]` properties never require an additional `[SequenceEquality]` or `[DictionaryEquality]` annotation.
 
-Multi-dimensional arrays (`T[,]`, `T[,,]`) are exempt from EQ0002 because `MultiDimensionalArrayEqualityComparer` is always the default — no annotation is needed or accepted.
+Multi-dimensional arrays (`T[,]`, `T[,,]`) are exempt from EQ0002 because `MultiDimensionalArrayEqualityComparer` is always applied as the default — no annotation is required or accepted.
 
-**EQ0020 / EQ0021** catch the case where the adapter attribute is added but the corresponding serialisation attribute is missing. Without `[DataContract]` the serialiser ignores all `[DataMember]` annotations, so the generated equality would silently include no properties. The same applies to `[MessagePackObject]` / `[Key(n)]`.
+**EQ0020 / EQ0021** detect the case where an adapter attribute is present but its corresponding serialisation attribute is absent. Without `[DataContract]`, the serialiser ignores all `[DataMember]` annotations; the generated equality would include no properties. The same applies to `[MessagePackObject]` and `[Key(n)]`.
 
-**EQ0022 / EQ0023** catch silently excluded properties on adapter-annotated types. The adapters only include properties that carry the serialisation inclusion attribute (`[DataMember]` / `[Key(n)]`) — all other public properties are silently skipped. This is intentional for computed properties or infrastructure fields you never want serialised, but an accidental omission is hard to notice. EQ0022/EQ0023 force the intent to be explicit: either add the inclusion attribute or add an explicit exclusion to suppress the warning:
+**EQ0022 / EQ0023** detect public properties that are silently excluded on adapter-annotated types. The adapters include only properties that carry the serialisation inclusion attribute (`[DataMember]` / `[Key(n)]`); all other public properties are excluded without warning. This is intentional for computed or infrastructure properties, but an accidental omission is difficult to identify. EQ0022 and EQ0023 require the intent to be made explicit: add the inclusion attribute or an explicit exclusion attribute to suppress the diagnostic.
 
 ```csharp
 [DataContract]
@@ -478,12 +492,12 @@ public partial class EventContract
 {
     [DataMember(Order = 0)] public int EventId { get; set; }   // included ✓
 
-    // EQ0022 — silently excluded; was this intentional?
+    // EQ0022 — excluded without annotation; intent is ambiguous
     public DateTime LastSeen { get; set; }
 
-    [IgnoreDataMember]      public DateTime LastSeen { get; set; }  // explicit exclusion ✓
+    [IgnoreDataMember] public DateTime LastSeen { get; set; }  // explicit exclusion ✓
     // or
-    [IgnoreEquality]        public DateTime LastSeen { get; set; }  // explicit exclusion ✓
+    [IgnoreEquality]   public DateTime LastSeen { get; set; }  // explicit exclusion ✓
 }
 ```
 
@@ -491,41 +505,41 @@ public partial class EventContract
 
 | Diagnostic | Condition |
 |---|---|
-| `EQ0010` | `[StringEquality]` on a non-`string` property |
-| `EQ0011` | `[DictionaryEquality]` on a type that does not implement `IDictionary<K,V>` or `IReadOnlyDictionary<K,V>` |
-| `EQ0012` | `[HashSetEquality]` on a type that does not implement `IEnumerable<T>` |
-| `EQ0013` | `[SequenceEquality]` on a type that does not implement `IEnumerable<T>` |
-| `EQ0014` | Any collection or equality attribute on a multi-dimensional array (`rank ≥ 2`) |
-| `EQ0015` | `[SequenceEquality]` or `[HashSetEquality]` on a dictionary type (`IDictionary<K,V>` or `IReadOnlyDictionary<K,V>`) |
+| `EQ0010` | `[StringEquality]` applied to a non-`string` property |
+| `EQ0011` | `[DictionaryEquality]` applied to a type that does not implement `IDictionary<K,V>` or `IReadOnlyDictionary<K,V>` |
+| `EQ0012` | `[HashSetEquality]` applied to a type that does not implement `IEnumerable<T>` |
+| `EQ0013` | `[SequenceEquality]` applied to a type that does not implement `IEnumerable<T>` |
+| `EQ0014` | Any collection or equality attribute applied to a multi-dimensional array (`rank ≥ 2`) |
+| `EQ0015` | `[SequenceEquality]` or `[HashSetEquality]` applied to a dictionary type (`IDictionary<K,V>` or `IReadOnlyDictionary<K,V>`) |
 
-### EQ0014 — attributes have no effect on multi-dimensional arrays
+### EQ0014 — equality attributes have no effect on multi-dimensional arrays
 
-`EQ0014` fires whenever any collection or equality attribute (`[SequenceEquality]`, `[HashSetEquality]`, `[DictionaryEquality]`, `[EqualityComparer]`, `[ReferenceEquality]`) is placed on a `T[,]` or higher-rank array property. This is intentional and expected — it is not possible to override the comparer for a multi-dimensional array:
+`EQ0014` is emitted when any collection or equality attribute (`[SequenceEquality]`, `[HashSetEquality]`, `[DictionaryEquality]`, `[EqualityComparer]`, `[ReferenceEquality]`) is placed on a property of type `T[,]` or higher rank. The comparer for multi-dimensional arrays cannot be overridden:
 
-- `[SequenceEquality]` and `[HashSetEquality]` are silently ignored; `MultiDimensionalArrayEqualityComparer` is used regardless.
-- `[EqualityComparer(typeof(MyComparer))]` appears to work but actually bypasses `MultiDimensionalArrayEqualityComparer` entirely, passing the whole array object as a single value to `MyComparer`. The result is effectively reference equality — almost certainly not what was intended.
+- `[SequenceEquality]` and `[HashSetEquality]` are ignored; `MultiDimensionalArrayEqualityComparer` is used regardless.
+- `[EqualityComparer(typeof(MyComparer))]` bypasses `MultiDimensionalArrayEqualityComparer` entirely and passes the array instance as a single value to the custom comparer, producing reference equality behaviour.
 
-The diagnostic turns a silent, surprising behavior into a loud, visible one at compile time:
+The diagnostic converts silent, incorrect behaviour into a visible compile-time warning:
 
 ```csharp
-// EQ0014 — attribute has no effect on rank-2 array
+// EQ0014 — attribute has no effect on a rank-2 array
 [SequenceEquality]
 public int[,]? Grid { get; set; }
 
-// Correct — no attribute needed; MultiDimensionalArrayEqualityComparer is the default
+// Correct — no attribute required; MultiDimensionalArrayEqualityComparer is the default
 public int[,]? Grid { get; set; }
 ```
 
-### EQ0015 — enumerable attributes have no useful meaning on dictionary types
+### EQ0015 — enumerable attributes are not applicable to dictionary types
 
-`EQ0015` fires when `[SequenceEquality]` or `[HashSetEquality]` is applied to a property whose type implements `IDictionary<K,V>` or `IReadOnlyDictionary<K,V>`. These attributes treat the dictionary as a flat sequence of `KeyValuePair<K,V>` entries, which discards key-lookup semantics and produces comparisons that are sensitive to insertion order. Use `[DictionaryEquality]` instead:
+`EQ0015` is emitted when `[SequenceEquality]` or `[HashSetEquality]` is applied to a property whose type implements `IDictionary<K,V>` or `IReadOnlyDictionary<K,V>`. These attributes treat the dictionary as a flat sequence of `KeyValuePair<K,V>` entries, discarding key-lookup semantics and producing insertion-order-sensitive comparisons. Use `[DictionaryEquality]` instead:
 
 ```csharp
-// EQ0015 — treats Dictionary as a sequence of KeyValuePair entries (order-sensitive, wrong)
+// EQ0015 — treats Dictionary as a sequence of KeyValuePair entries (order-sensitive)
 [SequenceEquality]
 public Dictionary<string, int>? Scores { get; set; }
 
-// EQ0015 — treats Dictionary as a set of KeyValuePair entries (still wrong)
+// EQ0015 — treats Dictionary as a set of KeyValuePair entries
 [HashSetEquality]
 public Dictionary<string, int>? Scores { get; set; }
 
@@ -538,16 +552,16 @@ public Dictionary<string, int>? Scores { get; set; }
 
 ## Equality invariants
 
-Every generated implementation satisfies:
+Every generated implementation satisfies the following properties:
 
-| Property | Meaning |
+| Property | Guarantee |
 |---|---|
 | **Reflexive** | `a.Equals(a)` is always `true` |
 | **Symmetric** | `a.Equals(b) == b.Equals(a)` always |
 | **Null-safe** | `a.Equals(null)` is always `false` |
 | **Hash contract** | `a.Equals(b)` implies `a.GetHashCode() == b.GetHashCode()` |
 
-The hash contract is critical for using objects as dictionary keys or in hash sets.
+The hash contract is critical for correct behaviour when instances are used as dictionary keys or hash set members.
 
 ---
 
@@ -555,41 +569,41 @@ The hash contract is critical for using objects as dictionary keys or in hash se
 
 ### New packages
 
-- **`Equatable.Generator.DataContract`** — adapter generator that reads `[DataMember]` attributes (`System.Runtime.Serialization`). Only properties annotated with `[DataMember]` are included in equality; `[IgnoreDataMember]` and unannotated properties are excluded. A build warning (EQ0022) fires for any public property with no annotation at all, forcing the intent to be explicit.
-- **`Equatable.Generator.MessagePack`** — adapter generator that reads `[Key(n)]` attributes. Only `[Key]` properties are included; `[IgnoreMember]` properties and unannotated properties are excluded. EQ0023 warns on unannotated properties.
+- **`Equatable.Generator.DataContract`** — adapter generator that reads `[DataMember]` attributes (`System.Runtime.Serialization`). Only properties annotated with `[DataMember]` are included in equality; `[IgnoreDataMember]` and unannotated properties are excluded. EQ0022 is emitted for any public property with no annotation, requiring the intent to be made explicit.
+- **`Equatable.Generator.MessagePack`** — adapter generator that reads `[Key(n)]` attributes. Only `[Key]` properties are included; `[IgnoreMember]` and unannotated properties are excluded. EQ0023 is emitted for unannotated properties.
 
 ### New features
 
-- **`[DictionaryEquality(sequential: true)]`** — key-sorted dictionary comparison. Both sides are sorted by key before comparing, making equality deterministic regardless of insertion order. Useful for snapshots and logs. Propagates into nested dictionary values.
-- **Direction overrides** — apply `[HashSetEquality]` to `List<T>` or `T[]` to make them order-insensitive; apply `[SequenceEquality]` to `HashSet<T>` to force order-sensitive comparison.
-- **Nested collection comparer propagation** — annotate the outer property once; the chosen comparer kind propagates automatically into all nested levels. `Dictionary<K, Dictionary<K2,V>>`, `Dictionary<K, List<V>>`, three-level nesting — all handled with a single annotation.
-- **`MultiDimensionalArrayEqualityComparer`** — structural equality for `T[,]`, `T[,,]`, and higher-rank arrays. Applied automatically as the default — no attribute needed. Checks rank, dimension lengths, and elements in row-major order.
-- **`IReadOnlyDictionary<K,V>` support** — dictionary comparers now accept any `IReadOnlyDictionary<K,V>`, not just `Dictionary<K,V>`.
-- **Base class delegation** — generated `Equals` calls `base.Equals()` when the base class is also an equatable-generated type. Works across adapter boundaries (e.g. `[Equatable]` derived from `[DataContractEquatable]`).
+- **`[DictionaryEquality(sequential: true)]`** — key-sorted dictionary comparison. Both sides are sorted by key before comparison, producing deterministic equality regardless of insertion order. Useful for snapshot testing and diagnostic logging. Propagates into nested dictionary values.
+- **Direction overrides** — `[HashSetEquality]` on `List<T>` or `T[]` produces order-insensitive comparison; `[SequenceEquality]` on `HashSet<T>` enforces order-sensitive comparison.
+- **Nested collection comparer propagation** — a single annotation on the outer property propagates the chosen comparer kind into all nested levels. `Dictionary<K, Dictionary<K2,V>>`, `Dictionary<K, List<V>>`, and three-level nesting are all handled with a single annotation.
+- **`MultiDimensionalArrayEqualityComparer`** — structural equality for `T[,]`, `T[,,]`, and higher-rank arrays, applied automatically as the default. Checks rank, dimension lengths, and element values in row-major order.
+- **`IReadOnlyDictionary<K,V>` support** — dictionary comparers accept any `IReadOnlyDictionary<K,V>`, not only `Dictionary<K,V>`.
+- **Base class delegation** — the generated `Equals` method calls `base.Equals()` when the base class is also an equatable-generated type, including across adapter boundaries.
 - **Analyzer diagnostics**
   - `EQ0020` — `[DataContractEquatable]` without `[DataContract]`
   - `EQ0021` — `[MessagePackEquatable]` without `[MessagePackObject]`
   - `EQ0022` — unannotated public property on a `[DataContractEquatable]` type
   - `EQ0023` — unannotated public property on a `[MessagePackEquatable]` type
-  - `EQ0014` — any collection or equality attribute on a multi-dimensional array (`rank ≥ 2`), where the comparer cannot be overridden
+  - `EQ0014` — equality attribute on a multi-dimensional array (`rank ≥ 2`), where the comparer cannot be overridden
   - `EQ0015` — `[SequenceEquality]` or `[HashSetEquality]` on a dictionary type
 
 ### Bug fixes
 
-- **Empty collections hash differently from null** — a sentinel value is used for empty sequences and dictionaries, satisfying the hash contract (`GetHashCode(empty) != GetHashCode(null)`).
-- **`HashSetEqualityComparer.GetHashCode` is order-independent** — uses a commutative sum, consistent with `SetEquals`-based `Equals`.
-- **`[DictionaryEquality(sequential: true)]` propagates correctly** — key-sorted mode is applied to nested dictionary values, not just the outermost level.
-- **Value types without `==`** — `EqualityComparer<T>.Default` is used instead of direct comparison.
+- **Empty collections hash differently from null** — a sentinel value ensures `GetHashCode(empty) != GetHashCode(null)`, satisfying the hash contract.
+- **`HashSetEqualityComparer.GetHashCode` is order-independent** — uses a commutative accumulation strategy, consistent with `SetEquals`-based `Equals`.
+- **`[DictionaryEquality(sequential: true)]` propagates correctly** — key-sorted mode is applied to nested dictionary values, not only the outermost level.
+- **Value types without `==`** — `EqualityComparer<T>.Default` is used instead of direct operator comparison.
 
 ### Improvements
 
-- `Equatable.Generator.DataContract` and `Equatable.Generator.MessagePack` are separate NuGet packages — add only what you need.
-- `IsPublicInstanceProperty` extracted as a shared helper, eliminating duplication between adapter generators.
+- `Equatable.Generator.DataContract` and `Equatable.Generator.MessagePack` are independent NuGet packages — include only what the project requires.
+- `IsPublicInstanceProperty` extracted as a shared helper, eliminating duplication across adapter generators.
 - Allocation-free hash code computation for dictionary comparers.
 
 ---
 
 ## Requirements
 
-- Target framework .NET Standard 2.0 or greater
-- C# `LangVersion` 8.0 or higher
+- Target framework: .NET Standard 2.0 or later
+- C# language version: 8.0 or higher
