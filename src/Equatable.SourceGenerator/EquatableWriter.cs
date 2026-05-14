@@ -136,15 +136,6 @@ public static class EquatableWriter
                         .Append(entityProperty.PropertyName)
                         .Append(")");
                     break;
-                case ComparerTypes.OrderedDictionary:
-                    codeBuilder
-                        .Append(" OrderedDictionaryEquals(")
-                        .Append(entityProperty.PropertyName)
-                        .Append(", other.")
-                        .Append(entityProperty.PropertyName)
-                        .Append(")");
-
-                    break;
                 case ComparerTypes.HashSet:
                     codeBuilder
                         .Append(" HashSetEquals(")
@@ -298,27 +289,6 @@ public static class EquatableWriter
                 .AppendLine("return true;")
                 .DecrementIndent()
                 .AppendLine("}")
-                .AppendLine()
-                .AppendLine("return global::System.Linq.Enumerable.SequenceEqual(")
-                .AppendLine("    global::System.Linq.Enumerable.OrderBy(left, p => p.Key),")
-                .AppendLine("    global::System.Linq.Enumerable.OrderBy(right, p => p.Key),")
-                .AppendLine("    global::System.Collections.Generic.EqualityComparer<global::System.Collections.Generic.KeyValuePair<TKey, TValue>>.Default);")
-                .DecrementIndent()
-                .AppendLine("}")
-                .AppendLine();
-        }
-
-        if (entityClass.Properties.Any(p => p.ComparerType == ComparerTypes.OrderedDictionary))
-        {
-            codeBuilder
-                .AppendLine("static bool OrderedDictionaryEquals<TKey, TValue>(global::System.Collections.Generic.IEnumerable<global::System.Collections.Generic.KeyValuePair<TKey, TValue>>? left, global::System.Collections.Generic.IEnumerable<global::System.Collections.Generic.KeyValuePair<TKey, TValue>>? right)")
-                .AppendLine("{")
-                .IncrementIndent()
-                .AppendLine("if (global::System.Object.ReferenceEquals(left, right))")
-                .AppendLine("    return true;")
-                .AppendLine()
-                .AppendLine("if (left is null || right is null)")
-                .AppendLine("    return false;")
                 .AppendLine()
                 .AppendLine("return global::System.Linq.Enumerable.SequenceEqual(")
                 .AppendLine("    global::System.Linq.Enumerable.OrderBy(left, p => p.Key),")
@@ -488,13 +458,6 @@ public static class EquatableWriter
                         .Append(entityProperty.PropertyName)
                         .AppendLine(");");
                     break;
-                case ComparerTypes.OrderedDictionary:
-                    codeBuilder
-                        .Append("hashCode = (hashCode * -1521134295) + ")
-                        .Append("OrderedDictionaryHashCode(")
-                        .Append(entityProperty.PropertyName)
-                        .AppendLine(");");
-                    break;
                 case ComparerTypes.HashSet:
                     codeBuilder
                         .Append("hashCode = (hashCode * -1521134295) + ")
@@ -595,31 +558,6 @@ public static class EquatableWriter
                 .AppendLine("        global::System.Collections.Generic.EqualityComparer<TValue>.Default.GetHashCode(item.Value!));")
                 .AppendLine()
                 .AppendLine("return hashCode;")
-                .DecrementIndent()
-                .AppendLine("}")
-                .AppendLine();
-        }
-
-        if (entityClass.Properties.Any(p => p.ComparerType == ComparerTypes.OrderedDictionary))
-        {
-            codeBuilder
-                .AppendLine("static int OrderedDictionaryHashCode<TKey, TValue>(global::System.Collections.Generic.IEnumerable<global::System.Collections.Generic.KeyValuePair<TKey, TValue>>? items)")
-                .AppendLine("{")
-                .IncrementIndent()
-                .AppendLine("if (items is null)")
-                .AppendLine("    return 0;")
-                .AppendLine()
-                .AppendLine("var hashCode = new global::System.HashCode();")
-                .AppendLine()
-                .AppendLine("foreach (var item in global::System.Linq.Enumerable.OrderBy(items, p => p.Key))")
-                .AppendLine("{")
-                .IncrementIndent()
-                .AppendLine("hashCode.Add(global::System.Collections.Generic.EqualityComparer<TKey>.Default.GetHashCode(item.Key!));")
-                .AppendLine("hashCode.Add(global::System.Collections.Generic.EqualityComparer<TValue>.Default.GetHashCode(item.Value!));")
-                .DecrementIndent()
-                .AppendLine("}")
-                .AppendLine()
-                .AppendLine("return hashCode.ToHashCode();")
                 .DecrementIndent()
                 .AppendLine("}")
                 .AppendLine();
