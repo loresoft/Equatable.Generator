@@ -336,7 +336,28 @@ public Dictionary<string, double>? Prices { get; set; }  // DictionaryEquality b
 
 ### `[DictionaryEquality(sequential: true)]` — key-sorted comparison
 
-Both sides are sorted by key before comparison. Insertion order is irrelevant, and the result is deterministic — useful for snapshot testing and diagnostic logging.
+Both sides are sorted by key before comparison. The equality result is **identical** to plain `[DictionaryEquality]` for every possible input — `{a:1, b:2}` equals `{b:2, a:1}` under both. The difference is purely in the algorithm and its consequences:
+
+| | `[DictionaryEquality]` | `[DictionaryEquality(sequential: true)]` |
+|---|---|---|
+| Algorithm | `TryGetValue` per entry | `OrderBy(key)` then `SequenceEqual` |
+| Cost | O(n) average | O(n log n) |
+| Key type requirement | needs `IEqualityComparer<K>` | needs `IComparer<K>` for sort order |
+
+**When `sequential: true` is worth the cost:**
+
+The main practical reason is a custom `keyComparer` that implements **both** `IEqualityComparer<K>` and `IComparer<K>`. Plain `[DictionaryEquality]` only uses the equality side (`TryGetValue`). With `sequential: true`, the same comparer also drives the sort order — giving you consistent, deterministic iteration for snapshot testing and diagnostic output, with the sort order defined by your comparer rather than insertion order or `GetHashCode` randomness.
+
+Example: a locale-aware config dictionary where keys must sort predictably for snapshot tests:
+
+```csharp
+// Keys sorted by StringComparer.Ordinal for deterministic snapshot output.
+// StringComparer implements both IEqualityComparer<string> and IComparer<string>.
+[DictionaryEquality(sequential: true)]
+public Dictionary<string, string>? LocaleOverrides { get; set; }
+```
+
+For plain `Dictionary<string, int>` with default comparers, prefer `[DictionaryEquality]` — the O(n) `TryGetValue` path is faster and produces the same result.
 
 **Supported types:** same as `[DictionaryEquality]` — any `IReadOnlyDictionary<K,V>`.
 
