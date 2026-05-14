@@ -25,8 +25,8 @@ This library generates correct `Equals` + `GetHashCode` at compile-time — zero
 | Package | What it does |
 |---|---|
 | `Equatable.Generator` | Generates equality for `[Equatable]` classes/records/structs. Includes all collection attributes. |
-| `Equatable.Generator.DataContract` | Adapter — reads `[DataMember]` / `[DataContract]` attributes (`System.Runtime.Serialization`) |
-| `Equatable.Generator.MessagePack` | Adapter — reads `[Key(n)]` attributes (MessagePack serialisation) |
+| `Equatable.Generator.DataContract` | Adapter — reads `[DataMember]` attributes (`System.Runtime.Serialization`), skips `[IgnoreDataMember]` |
+| `Equatable.Generator.MessagePack` | Adapter — reads `[Key(n)]` attributes (MessagePack serialisation), skips `[IgnoreMember]` |
 | `Equatable.Comparers` | Ships the runtime comparers used by the generated code |
 
 ## Getting started
