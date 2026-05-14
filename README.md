@@ -273,9 +273,11 @@ public HashSet<List<int>>? OrderedGroups { get; set; }
 **Supported types:** any `System.Array` with rank ≥ 2 — `T[,]`, `T[,,]`, and beyond. Single-dimensional `T[]` uses the standard `[SequenceEquality]` path instead.
 
 ```csharp
+// 2D array — [SequenceEquality] required (no default for multi-dimensional arrays)
 [SequenceEquality]
 public int[,] Grid { get; set; }
 
+// 3D array — same attribute, rank detected automatically
 [SequenceEquality]
 public double[,,] Cube { get; set; }
 ```
@@ -288,10 +290,13 @@ Two arrays are equal when:
 ```csharp
 var a = new int[,] { { 1, 2 }, { 3, 4 } };
 var b = new int[,] { { 1, 2 }, { 3, 4 } };
-// a == b ✓
+// a == b ✓  (same rank, same dimensions, same elements)
 
 var c = new int[,] { { 1, 3 }, { 2, 4 } };  // transposed
-// a != c ✓  (row-major order is sensitive to transposition)
+// a != c ✓  (row-major order: [0,0]=1,[0,1]=2,[1,0]=3,[1,1]=4 vs [0,0]=1,[0,1]=3,...)
+
+var d = new int[,,] { { { 1, 2 }, { 3, 4 } } };
+// a != d ✓  (rank 2 vs rank 3 — always unequal regardless of content)
 ```
 
 ---
