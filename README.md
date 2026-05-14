@@ -343,8 +343,12 @@ The analyzer validates every `[Equatable]` class at compile time and emits warni
 |---|---|---|
 | `EQ0001` | `IDictionary<K,V>` or `IReadOnlyDictionary<K,V>` property with no attribute | `Dictionary<string,int>? Map` |
 | `EQ0002` | `IEnumerable<T>` property (including `T[]`) with no attribute | `List<string>? Tags`, `int[]? Ids` |
+| `EQ0020` | `[DataContractEquatable]` used without `[DataContract]` on the same class | — |
+| `EQ0021` | `[MessagePackEquatable]` used without `[MessagePackObject]` on the same class | — |
 
 Multi-dimensional arrays (`T[,]`, `T[,,]`) are exempt from EQ0002 because `MultiDimensionalArrayEqualityComparer` is always the default — no annotation is needed or accepted.
+
+EQ0020 and EQ0021 catch the case where the adapter attribute is added but the corresponding serialisation attribute is missing. Without `[DataContract]` the serialiser ignores all `[DataMember]` annotations, so the generated equality would silently include no properties. The same applies to `[MessagePackObject]` / `[Key(n)]`.
 
 ### Invalid attribute warnings
 
