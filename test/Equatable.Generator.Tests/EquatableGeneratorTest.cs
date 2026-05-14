@@ -567,6 +567,36 @@ public partial class Grid
             .ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
+    /// <summary>
+    /// Proves that [EqualityComparer] on a T[,] property bypasses MultiDimensionalArrayEqualityComparer —
+    /// the custom comparer receives the whole array as a single value, not individual elements.
+    /// This means element-level overrides on multi-dimensional arrays are NOT supported.
+    /// </summary>
+    [Fact]
+    public Task GenerateMultiDimensionalArrayWithEqualityComparerBypassesMultiDimComparer()
+    {
+        var source = @"
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Labels
+{
+    [EqualityComparer(typeof(System.StringComparer), nameof(System.StringComparer.OrdinalIgnoreCase))]
+    public string[,]? Grid { get; set; }
+
+    public int Id { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
     [Fact]
     public Task GenerateReadOnlyDictionary()
     {
