@@ -6,6 +6,29 @@ public class DictionaryComparerProperties
 {
     private static readonly DictionaryEqualityComparer<string, int> Comparer = DictionaryEqualityComparer<string, int>.Default;
 
+    // Hash contract with custom keyComparer: Equals(x,y) → GetHashCode(x) == GetHashCode(y).
+    // This catches the bug where Equals used y.TryGetValue (dict's internal comparer) while
+    // GetHashCode used KeyComparer — the two could disagree, violating the contract.
+    private static readonly DictionaryEqualityComparer<string, int> CaseInsensitiveComparer =
+        new(StringComparer.OrdinalIgnoreCase, EqualityComparer<int>.Default);
+
+    [Property]
+    public Property CustomKeyComparer_HashContract_EqualImpliesSameHash(Dictionary<string, int> dict)
+    {
+        // Build a copy with keys mapped to their upper-case equivalents — equal under OrdinalIgnoreCase
+        var upper = new Dictionary<string, int>();
+        foreach (var pair in dict)
+        {
+            var upperKey = pair.Key.ToUpperInvariant();
+            upper[upperKey] = pair.Value;   // last writer wins if two keys collide under upper-case
+        }
+
+        // Only assert the contract when Equals says they are equal
+        return Prop.When(
+            CaseInsensitiveComparer.Equals(dict, upper),
+            CaseInsensitiveComparer.GetHashCode(dict) == CaseInsensitiveComparer.GetHashCode(upper));
+    }
+
     [Property]
     public Property Equals_Reflexivity_SameInstance_ReturnsTrue(Dictionary<string, int> dict)
     {

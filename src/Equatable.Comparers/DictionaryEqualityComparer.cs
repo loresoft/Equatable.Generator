@@ -53,9 +53,14 @@ public class DictionaryEqualityComparer<TKey, TValue> : IEqualityComparer<IDicti
         if (x.Count != y.Count)
             return false;
 
+        // y.TryGetValue uses y's own internal comparer, not this.KeyComparer.
+        // Build a lookup keyed by KeyComparer so the same comparer governs both
+        // Equals and GetHashCode — required for the hash contract to hold.
+        var yLookup = new Dictionary<TKey, TValue>(y, KeyComparer);
+
         foreach (var pair in x)
         {
-            if (!y.TryGetValue(pair.Key, out var value))
+            if (!yLookup.TryGetValue(pair.Key, out var value))
                 return false;
 
             if (!ValueComparer.Equals(pair.Value, value))

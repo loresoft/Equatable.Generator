@@ -6,6 +6,24 @@ public class ReadOnlyDictionaryComparerProperties
 {
     private static readonly ReadOnlyDictionaryEqualityComparer<string, int> Comparer = ReadOnlyDictionaryEqualityComparer<string, int>.Default;
 
+    private static readonly ReadOnlyDictionaryEqualityComparer<string, int> CaseInsensitiveComparer =
+        new(StringComparer.OrdinalIgnoreCase, EqualityComparer<int>.Default);
+
+    [Property]
+    public Property CustomKeyComparer_HashContract_EqualImpliesSameHash(Dictionary<string, int> dict)
+    {
+        var upper = new Dictionary<string, int>();
+        foreach (var pair in dict)
+            upper[pair.Key.ToUpperInvariant()] = pair.Value;
+
+        IReadOnlyDictionary<string, int> a = dict;
+        IReadOnlyDictionary<string, int> b = upper;
+
+        return Prop.When(
+            CaseInsensitiveComparer.Equals(a, b),
+            CaseInsensitiveComparer.GetHashCode(a) == CaseInsensitiveComparer.GetHashCode(b));
+    }
+
     [Property]
     public Property Equals_Reflexivity_SameInstance_ReturnsTrue(Dictionary<string, int> dict)
     {
