@@ -25,7 +25,7 @@ This library generates correct `Equals` + `GetHashCode` at compile-time — zero
 | Package | What it does |
 |---|---|
 | `Equatable.Generator` | Generates equality for `[Equatable]` classes/records/structs. Includes all collection attributes. |
-| `Equatable.Generator.DataContract` | Adapter — reads `[DataMember]` attributes (WCF / protobuf-net contracts) |
+| `Equatable.Generator.DataContract` | Adapter — reads `[DataMember]` / `[DataContract]` attributes (`System.Runtime.Serialization`) |
 | `Equatable.Generator.MessagePack` | Adapter — reads `[Key(n)]` attributes (MessagePack serialisation) |
 | `Equatable.Comparers` | Ships the runtime comparers used by the generated code |
 
@@ -78,19 +78,33 @@ The generator writes `Equals` and `GetHashCode` for every public property. Works
 
 ## Adapter generators
 
-Use `[DataContractEquatable]` or `[MessagePackEquatable]` when your class is already annotated for serialisation. They work exactly like `[Equatable]` but only include the properties the serialiser knows about:
+Use `[DataContractEquatable]` or `[MessagePackEquatable]` when your class is already annotated for serialisation. The adapter reads the existing serialisation attributes to decide which properties to include — no duplication of intent required.
+
+### Property selection
+
+| Adapter | Included | Explicitly excluded | Silently skipped → EQ0022/EQ0023 |
+|---|---|---|---|
+| `[DataContractEquatable]` | `[DataMember]` | `[IgnoreDataMember]` or `[IgnoreEquality]` | all other public properties |
+| `[MessagePackEquatable]` | `[Key(n)]` | `[IgnoreMember]` or `[IgnoreEquality]` | all other public properties |
+
+Properties with no annotation at all are silently excluded from equality. If that omission was accidental the build will warn (EQ0022 / EQ0023) — add the inclusion or exclusion attribute to make the intent explicit.
+
+### Comparer inference — no equality attributes needed on collection properties
+
+Adapters auto-infer the correct collection comparer from the property type, so `[DataMember]` / `[Key(n)]` properties never need an explicit `[SequenceEquality]`, `[DictionaryEquality]`, or `[HashSetEquality]`. The same defaults apply as for `[Equatable]`: `List<T>` / `T[]` → `SequenceEquality`; `HashSet<T>` → `HashSetEquality`; `Dictionary<K,V>` → `DictionaryEquality`.
 
 ```csharp
-// Only [DataMember] properties are included in equality.
-// [IgnoreDataMember] and un-annotated properties are skipped.
 [DataContract]
 [DataContractEquatable]
 public partial class EventContract
 {
     [DataMember(Order = 0)] public int EventId { get; set; }
 
-    // string[] defaults to [SequenceEquality] — no attribute needed.
-    [DataMember(Order = 1)] public string[]? Tags { get; set; }
+    // List<T> → SequenceEqualityComparer inferred — no attribute needed
+    [DataMember(Order = 1)] public List<string>? Tags { get; set; }
+
+    // Dictionary<K,V> → DictionaryEqualityComparer inferred — no attribute needed
+    [DataMember(Order = 2)] public Dictionary<string, int>? Scores { get; set; }
 
     [IgnoreDataMember]
     public DateTime LastSeen { get; set; }  // excluded from equality
@@ -98,8 +112,6 @@ public partial class EventContract
 ```
 
 ```csharp
-// Only [Key(n)] properties are included.
-// [IgnoreMember] properties are skipped.
 [MessagePackObject]
 [MessagePackEquatable]
 public partial class LiveScore
@@ -107,8 +119,37 @@ public partial class LiveScore
     [Key(0)] public int MatchId { get; set; }
     [Key(1)] public int HomeScore { get; set; }
 
+    // HashSet<T> → HashSetEqualityComparer inferred — no attribute needed
+    [Key(2)] public HashSet<string>? Tags { get; set; }
+
     [IgnoreMember]
     public DateTime ReceivedAt { get; set; }  // excluded
+}
+```
+
+### Overriding the inferred comparer
+
+Explicit equality attributes take priority over inference. All the same attributes from the `[Equatable]` table work on adapter-included properties:
+
+```csharp
+[DataContract]
+[DataContractEquatable]
+public partial class EventContract
+{
+    // Override: treat list as a set (order irrelevant)
+    [DataMember(Order = 0)]
+    [HashSetEquality]
+    public List<string>? PermissionCodes { get; set; }
+
+    // Override: case-insensitive string comparison
+    [DataMember(Order = 1)]
+    [StringEquality(StringComparison.OrdinalIgnoreCase)]
+    public string? Region { get; set; }
+
+    // Override: fully custom comparer
+    [DataMember(Order = 2)]
+    [EqualityComparer(typeof(CountOnlyComparer))]
+    public Dictionary<string, int>? Weights { get; set; }
 }
 ```
 
