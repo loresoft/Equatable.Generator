@@ -79,6 +79,58 @@ public class OrderedDictionaryEqualityComparerTest
     }
 
 
+    // ── custom IEqualityComparer+IComparer: StringComparer.OrdinalIgnoreCase ──────────────────────
+    // Demonstrates why sequential: true exists. StringComparer implements both interfaces, so
+    // the same comparer drives key equality AND sort order — hash is insertion-order independent
+    // even when the dictionary uses a non-default key comparer.
+
+    private static OrderedDictionaryEqualityComparer<string, int> CaseInsensitive()
+        => new(StringComparer.OrdinalIgnoreCase, EqualityComparer<int>.Default);
+
+    [Fact]
+    public void CustomComparer_CaseInsensitiveKeys_Equal()
+    {
+        // "West" and "WEST" are the same key under OrdinalIgnoreCase
+        var a = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase) { ["West"] = 42, ["east"] = 17 };
+        var b = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase) { ["WEST"] = 42, ["EAST"] = 17 };
+
+        Assert.True(CaseInsensitive().Equals(a, b));
+    }
+
+    [Fact]
+    public void CustomComparer_DifferentInsertionOrder_SameHashCode()
+    {
+        // Same pairs, different insertion order — hash must match because OrdinalIgnoreCase
+        // drives both equality and sort order, making the result fully deterministic.
+        var a = new Dictionary<string, int> { ["West"] = 42, ["east"] = 17, ["NORTH"] = 99 };
+        var b = new Dictionary<string, int> { ["NORTH"] = 99, ["West"] = 42, ["east"] = 17 };
+
+        Assert.Equal(CaseInsensitive().GetHashCode(a), CaseInsensitive().GetHashCode(b));
+    }
+
+    [Fact]
+    public void CustomComparer_GetHashCode_CaseVariantsProduceSameHash()
+    {
+        // "West"→42 and "WEST"→42 are the same entry under OrdinalIgnoreCase — same hash
+        var a = new Dictionary<string, int> { ["West"] = 42 };
+        var b = new Dictionary<string, int> { ["WEST"] = 42 };
+
+        Assert.Equal(CaseInsensitive().GetHashCode(a), CaseInsensitive().GetHashCode(b));
+    }
+
+    [Fact]
+    public void DefaultComparer_CaseVariants_NotEqual()
+    {
+        // Contrast: with default (ordinal) comparer, "West" != "WEST" — different keys
+        var a = new Dictionary<string, int> { ["West"] = 42 };
+        var b = new Dictionary<string, int> { ["WEST"] = 42 };
+
+        Assert.False(Comparer.Equals(a, b));
+        Assert.NotEqual(Comparer.GetHashCode(a), Comparer.GetHashCode(b));
+    }
+
+    // ────────────────────────────────────────────────────────────────────────────────────────────
+
     private static readonly OrderedDictionaryEqualityComparer<string, int> Comparer
         = OrderedDictionaryEqualityComparer<string, int>.Default;
 

@@ -346,16 +346,42 @@ Both sides are sorted by key before comparison. The equality result is **identic
 
 **When `sequential: true` is worth the cost:**
 
-The main practical reason is a custom `keyComparer` that implements **both** `IEqualityComparer<K>` and `IComparer<K>`. Plain `[DictionaryEquality]` only uses the equality side (`TryGetValue`). With `sequential: true`, the same comparer also drives the sort order — giving you consistent, deterministic iteration for snapshot testing and diagnostic output, with the sort order defined by your comparer rather than insertion order or `GetHashCode` randomness.
+The main practical reason is a custom `keyComparer` that implements **both** `IEqualityComparer<K>` and `IComparer<K>`. Plain `[DictionaryEquality]` only uses the equality side (`TryGetValue`). With `sequential: true`, the same comparer drives **both** equality and sort order.
 
-Example: a locale-aware config dictionary where keys must sort predictably for snapshot tests:
+`StringComparer` is the canonical example — it implements both interfaces. Using `StringComparer.OrdinalIgnoreCase` as a key comparer means `"region"` and `"REGION"` are the same key, and keys sort in a predictable case-insensitive order:
 
 ```csharp
-// Keys sorted by StringComparer.Ordinal for deterministic snapshot output.
-// StringComparer implements both IEqualityComparer<string> and IComparer<string>.
-[DictionaryEquality(sequential: true)]
-public Dictionary<string, string>? LocaleOverrides { get; set; }
+// Built with OrdinalIgnoreCase so "region" and "REGION" are the same key.
+var scores = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+{
+    ["West"]   = 42,
+    ["east"]   = 17,
+    ["NORTH"]  = 99,
+};
 ```
+
+With plain `[DictionaryEquality]`, `TryGetValue` uses the dictionary's own `OrdinalIgnoreCase` comparer for lookup — equality is correct. But `GetHashCode` iterates in arbitrary insertion order, so two equal dictionaries built in different insertion order may produce different hash codes.
+
+With `[DictionaryEquality(sequential: true)]`, `OrderedDictionaryEqualityComparer` receives `StringComparer.OrdinalIgnoreCase` as its `keyComparer`. Because `StringComparer` also implements `IComparer<string>`, it drives the sort in both `Equals` and `GetHashCode` — the iteration order is always `east → NORTH → West` (case-insensitive ordinal), regardless of insertion order:
+
+```csharp
+[Equatable]
+public partial class RegionScores
+{
+    // Sequential so the OrdinalIgnoreCase comparer controls sort order in GetHashCode,
+    // making the hash insertion-order independent even with a custom key comparer.
+    [DictionaryEquality(sequential: true)]
+    public Dictionary<string, int>? Scores { get; set; }
+}
+
+var a = new RegionScores { Scores = new(StringComparer.OrdinalIgnoreCase) { ["West"] = 42, ["east"] = 17 } };
+var b = new RegionScores { Scores = new(StringComparer.OrdinalIgnoreCase) { ["east"] = 17, ["West"] = 42 } };
+
+a.Equals(b);          // true  — same key/value pairs
+a.GetHashCode() == b.GetHashCode();  // true  — sort order is deterministic via OrdinalIgnoreCase
+```
+
+> **Note:** the comparer passed to `OrderedDictionaryEqualityComparer` must be the one you supply via `[EqualityComparer]` or the generator's inferred default. The dictionary's own internal comparer (set at construction time via `new Dictionary<K,V>(myComparer)`) is not visible to the generated equality code — the generated code uses `EqualityComparer<K>.Default` unless you override it explicitly.
 
 For plain `Dictionary<string, int>` with default comparers, prefer `[DictionaryEquality]` — the O(n) `TryGetValue` path is faster and produces the same result.
 
