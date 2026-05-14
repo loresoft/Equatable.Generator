@@ -866,4 +866,124 @@ public partial class Cube
 
         Assert.Empty(diagnostics);
     }
+
+    // ── EQ0015 — enumerable attribute on dictionary type ─────────────────────────────────────────
+
+    [Fact]
+    public async Task AnalyzeSequenceEqualityOnDictionaryEmitsEQ0015()
+    {
+        // [SequenceEquality] on Dictionary<K,V> treats it as a sequence of KeyValuePair — wrong intent
+        const string source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    [SequenceEquality]
+    public Dictionary<string, int>? Permissions { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0015", diagnostic.Id);
+        Assert.Contains("Permissions", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeHashSetEqualityOnDictionaryEmitsEQ0015()
+    {
+        // [HashSetEquality] on Dictionary<K,V> treats it as a set of KeyValuePair — wrong intent
+        const string source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    [HashSetEquality]
+    public Dictionary<string, int>? Permissions { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0015", diagnostic.Id);
+        Assert.Contains("Permissions", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeSequenceEqualityOnIDictionaryEmitsEQ0015()
+    {
+        // [SequenceEquality] on IDictionary<K,V> → EQ0015
+        const string source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    [SequenceEquality]
+    public IDictionary<string, int>? Permissions { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0015", diagnostic.Id);
+        Assert.Contains("Permissions", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeHashSetEqualityOnIReadOnlyDictionaryEmitsEQ0015()
+    {
+        // [HashSetEquality] on IReadOnlyDictionary<K,V> → EQ0015
+        const string source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    [HashSetEquality]
+    public IReadOnlyDictionary<string, int>? Scores { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0015", diagnostic.Id);
+        Assert.Contains("Scores", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeDictionaryEqualityOnDictionaryIsValid()
+    {
+        // [DictionaryEquality] on Dictionary<K,V> → no diagnostic (correct attribute)
+        const string source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class UserImport
+{
+    [DictionaryEquality]
+    public Dictionary<string, int>? Permissions { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        Assert.Empty(diagnostics);
+    }
 }

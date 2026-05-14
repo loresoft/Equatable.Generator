@@ -355,6 +355,7 @@ Multi-dimensional arrays (`T[,]`, `T[,,]`) are exempt from EQ0002 because `Multi
 | `EQ0012` | `[HashSetEquality]` on a type that does not implement `IEnumerable<T>` |
 | `EQ0013` | `[SequenceEquality]` on a type that does not implement `IEnumerable<T>` |
 | `EQ0014` | Any collection or equality attribute on a multi-dimensional array (`rank ≥ 2`) |
+| `EQ0015` | `[SequenceEquality]` or `[HashSetEquality]` on a dictionary type (`IDictionary<K,V>` or `IReadOnlyDictionary<K,V>`) |
 
 ### EQ0014 — attributes have no effect on multi-dimensional arrays
 
@@ -372,6 +373,24 @@ public int[,]? Grid { get; set; }
 
 // Correct — no attribute needed; MultiDimensionalArrayEqualityComparer is the default
 public int[,]? Grid { get; set; }
+```
+
+### EQ0015 — enumerable attributes have no useful meaning on dictionary types
+
+`EQ0015` fires when `[SequenceEquality]` or `[HashSetEquality]` is applied to a property whose type implements `IDictionary<K,V>` or `IReadOnlyDictionary<K,V>`. These attributes treat the dictionary as a flat sequence of `KeyValuePair<K,V>` entries, which discards key-lookup semantics and produces comparisons that are sensitive to insertion order. Use `[DictionaryEquality]` instead:
+
+```csharp
+// EQ0015 — treats Dictionary as a sequence of KeyValuePair entries (order-sensitive, wrong)
+[SequenceEquality]
+public Dictionary<string, int>? Scores { get; set; }
+
+// EQ0015 — treats Dictionary as a set of KeyValuePair entries (still wrong)
+[HashSetEquality]
+public Dictionary<string, int>? Scores { get; set; }
+
+// Correct — key-value equality, insertion order irrelevant
+[DictionaryEquality]
+public Dictionary<string, int>? Scores { get; set; }
 ```
 
 ---

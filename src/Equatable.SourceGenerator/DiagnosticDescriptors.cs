@@ -67,4 +67,13 @@ internal static class DiagnosticDescriptors
         isEnabledByDefault: true
     );
 
+    public static readonly DiagnosticDescriptor InvalidEnumerableAttributeOnDictionary = new(
+        id: "EQ0015",
+        title: "Invalid Enumerable Attribute on Dictionary Type",
+        messageFormat: "Invalid attribute usage for property '{0}'. Property type implements IDictionary<TKey, TValue> or IReadOnlyDictionary<TKey, TValue>; use [DictionaryEquality] instead of [SequenceEquality] or [HashSetEquality].",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true
+    );
+
 }

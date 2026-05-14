@@ -17,7 +17,8 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
             DiagnosticDescriptors.InvalidDictionaryEqualityAttributeUsage,
             DiagnosticDescriptors.InvalidHashSetEqualityAttributeUsage,
             DiagnosticDescriptors.InvalidSequenceEqualityAttributeUsage,
-            DiagnosticDescriptors.InvalidAttributeOnMultiDimensionalArray
+            DiagnosticDescriptors.InvalidAttributeOnMultiDimensionalArray,
+            DiagnosticDescriptors.InvalidEnumerableAttributeOnDictionary
         );
 
     public override void Initialize(AnalysisContext context)
@@ -93,6 +94,17 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     DiagnosticDescriptors.InvalidAttributeOnMultiDimensionalArray,
+                    attributeLocation,
+                    property.Name));
+            }
+
+            // [SequenceEquality] or [HashSetEquality] on a dictionary type treats the dict as a
+            // sequence of KeyValuePair entries, discarding key-lookup semantics entirely.
+            if ((className == "SequenceEqualityAttribute" || className == "HashSetEqualityAttribute")
+                && ImplementsDictionary(property.Type))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    DiagnosticDescriptors.InvalidEnumerableAttributeOnDictionary,
                     attributeLocation,
                     property.Name));
             }
