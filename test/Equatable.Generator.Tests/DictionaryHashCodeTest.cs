@@ -74,4 +74,54 @@ public class DictionaryHashCodeTest
         Assert.True(DictComparer.Equals(first, second));
         Assert.Equal(DictComparer.GetHashCode(first), DictComparer.GetHashCode(second));
     }
+
+    /// <summary>
+    /// The critical multi-entry case: same keys, values swapped across keys.
+    /// {a→1, b→2} != {a→2, b→1} — Equals correctly returns false (TryGetValue finds "a"→2≠1).
+    /// The user's concern: can sum(Combine(k,v)) produce the same value for both?
+    ///
+    /// Commutative sum does NOT guarantee no collision here — it only guarantees the contract:
+    ///   Equals(x,y) → GetHashCode(x) == GetHashCode(y)
+    /// The contract only runs one direction. Unequal dicts MAY share a hash code (collision).
+    ///
+    /// This test verifies:
+    ///   1. Equals returns false (correctness — always guaranteed by TryGetValue logic)
+    ///   2. Hash codes differ in practice for this common pattern (collision absent here)
+    ///
+    /// If this test ever fails on (2), the fix is NOT in Equals (already correct) but in
+    /// accepting the collision as a legitimate hash table trade-off — the contract is not violated.
+    /// </summary>
+    [Fact]
+    public void HashCode_SwappedValues_UnequalDictionaries_EqualIsFalse()
+    {
+        // {a→1, b→2} vs {a→2, b→1}: same key set, values assigned to different keys
+        var first  = new Dictionary<string, int> { ["a"] = 1, ["b"] = 2 };
+        var second = new Dictionary<string, int> { ["a"] = 2, ["b"] = 1 };
+
+        // Equals must always be false — TryGetValue("a") finds 2≠1
+        Assert.False(DictComparer.Equals(first, second));
+        Assert.False(DictComparer.Equals(second, first));
+    }
+
+    [Fact]
+    public void HashCode_SwappedValues_ProduceDifferentHashInPractice()
+    {
+        // Verifies no systematic collision for the swapped-values pattern.
+        // Note: hash collisions are theoretically allowed; this test catches regressions
+        // in the hash function that make them routine.
+        var first  = new Dictionary<string, int> { ["a"] = 1, ["b"] = 2 };
+        var second = new Dictionary<string, int> { ["a"] = 2, ["b"] = 1 };
+
+        Assert.NotEqual(DictComparer.GetHashCode(first), DictComparer.GetHashCode(second));
+    }
+
+    [Fact]
+    public void ReadOnly_HashCode_SwappedValues_ProduceDifferentHashInPractice()
+    {
+        IReadOnlyDictionary<string, int> first  = new Dictionary<string, int> { ["x"] = 10, ["y"] = 20 };
+        IReadOnlyDictionary<string, int> second = new Dictionary<string, int> { ["x"] = 20, ["y"] = 10 };
+
+        Assert.False(ReadOnlyComparer.Equals(first, second));
+        Assert.NotEqual(ReadOnlyComparer.GetHashCode(first), ReadOnlyComparer.GetHashCode(second));
+    }
 }

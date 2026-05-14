@@ -611,7 +611,7 @@ public static class EquatableWriter
                 .AppendLine()
                 .AppendLine("var hashCode = new global::System.HashCode();")
                 .AppendLine()
-                .AppendLine("foreach (var item in items)")
+                .AppendLine("foreach (var item in global::System.Linq.Enumerable.OrderBy(items, p => p.Key))")
                 .AppendLine("{")
                 .IncrementIndent()
                 .AppendLine("hashCode.Add(global::System.Collections.Generic.EqualityComparer<TKey>.Default.GetHashCode(item.Key!));")
