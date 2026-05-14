@@ -17,8 +17,17 @@ public class DataContractEquatableAnalyzer : DiagnosticAnalyzer
         isEnabledByDefault: true
     );
 
+    private static readonly DiagnosticDescriptor UnannotatedPropertyOnDataContractEquatable = new(
+        id: "EQ0022",
+        title: "Unannotated Property on DataContractEquatable Type",
+        messageFormat: "Property '{0}' on [DataContractEquatable] type '{1}' has no [DataMember] or [IgnoreDataMember] attribute. It will be silently excluded from equality. Add [DataMember] to include it or [IgnoreDataMember] to suppress this warning.",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true
+    );
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(MissingDataContractAttribute);
+        ImmutableArray.Create(MissingDataContractAttribute, UnannotatedPropertyOnDataContractEquatable);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -34,11 +43,29 @@ public class DataContractEquatableAnalyzer : DiagnosticAnalyzer
         if (!HasDataContractEquatableAttribute(typeSymbol))
             return;
 
-        if (HasDataContractAttribute(typeSymbol))
-            return;
+        if (!HasDataContractAttribute(typeSymbol))
+        {
+            var location = typeSymbol.Locations.FirstOrDefault();
+            context.ReportDiagnostic(Diagnostic.Create(MissingDataContractAttribute, location, typeSymbol.Name));
+        }
 
-        var location = typeSymbol.Locations.FirstOrDefault();
-        context.ReportDiagnostic(Diagnostic.Create(MissingDataContractAttribute, location, typeSymbol.Name));
+        foreach (var property in typeSymbol.GetMembers().OfType<IPropertySymbol>())
+        {
+            if (!EquatableGenerator.IsPublicInstanceProperty(property))
+                continue;
+
+            var attributes = property.GetAttributes();
+
+            if (HasDataMemberAttribute(attributes) || HasIgnoreDataMemberAttribute(attributes) || HasIgnoreEqualityAttribute(attributes))
+                continue;
+
+            var propertyLocation = property.Locations.FirstOrDefault();
+            context.ReportDiagnostic(Diagnostic.Create(
+                UnannotatedPropertyOnDataContractEquatable,
+                propertyLocation,
+                property.Name,
+                typeSymbol.Name));
+        }
     }
 
     private static bool HasDataContractEquatableAttribute(INamedTypeSymbol typeSymbol) =>
@@ -53,5 +80,26 @@ public class DataContractEquatableAnalyzer : DiagnosticAnalyzer
         {
             Name: "DataContractAttribute",
             ContainingNamespace: { Name: "Serialization", ContainingNamespace: { Name: "Runtime", ContainingNamespace.Name: "System" } }
+        });
+
+    private static bool HasDataMemberAttribute(ImmutableArray<AttributeData> attributes) =>
+        attributes.Any(a => a.AttributeClass is
+        {
+            Name: "DataMemberAttribute",
+            ContainingNamespace: { Name: "Serialization", ContainingNamespace: { Name: "Runtime", ContainingNamespace.Name: "System" } }
+        });
+
+    private static bool HasIgnoreDataMemberAttribute(ImmutableArray<AttributeData> attributes) =>
+        attributes.Any(a => a.AttributeClass is
+        {
+            Name: "IgnoreDataMemberAttribute",
+            ContainingNamespace: { Name: "Serialization", ContainingNamespace: { Name: "Runtime", ContainingNamespace.Name: "System" } }
+        });
+
+    private static bool HasIgnoreEqualityAttribute(ImmutableArray<AttributeData> attributes) =>
+        attributes.Any(a => a.AttributeClass is
+        {
+            Name: "IgnoreEqualityAttribute",
+            ContainingNamespace: { Name: "Attributes", ContainingNamespace.Name: "Equatable" }
         });
 }

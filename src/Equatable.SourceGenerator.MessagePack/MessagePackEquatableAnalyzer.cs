@@ -17,8 +17,17 @@ public class MessagePackEquatableAnalyzer : DiagnosticAnalyzer
         isEnabledByDefault: true
     );
 
+    private static readonly DiagnosticDescriptor UnannotatedPropertyOnMessagePackEquatable = new(
+        id: "EQ0023",
+        title: "Unannotated Property on MessagePackEquatable Type",
+        messageFormat: "Property '{0}' on [MessagePackEquatable] type '{1}' has no [Key] or [IgnoreMember] attribute. It will be silently excluded from equality. Add [Key(n)] to include it or [IgnoreMember] to suppress this warning.",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true
+    );
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(MissingMessagePackObjectAttribute);
+        ImmutableArray.Create(MissingMessagePackObjectAttribute, UnannotatedPropertyOnMessagePackEquatable);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -34,11 +43,29 @@ public class MessagePackEquatableAnalyzer : DiagnosticAnalyzer
         if (!HasMessagePackEquatableAttribute(typeSymbol))
             return;
 
-        if (HasMessagePackObjectAttribute(typeSymbol))
-            return;
+        if (!HasMessagePackObjectAttribute(typeSymbol))
+        {
+            var location = typeSymbol.Locations.FirstOrDefault();
+            context.ReportDiagnostic(Diagnostic.Create(MissingMessagePackObjectAttribute, location, typeSymbol.Name));
+        }
 
-        var location = typeSymbol.Locations.FirstOrDefault();
-        context.ReportDiagnostic(Diagnostic.Create(MissingMessagePackObjectAttribute, location, typeSymbol.Name));
+        foreach (var property in typeSymbol.GetMembers().OfType<IPropertySymbol>())
+        {
+            if (!EquatableGenerator.IsPublicInstanceProperty(property))
+                continue;
+
+            var attributes = property.GetAttributes();
+
+            if (HasKeyAttribute(attributes) || HasIgnoreMemberAttribute(attributes) || HasIgnoreEqualityAttribute(attributes))
+                continue;
+
+            var propertyLocation = property.Locations.FirstOrDefault();
+            context.ReportDiagnostic(Diagnostic.Create(
+                UnannotatedPropertyOnMessagePackEquatable,
+                propertyLocation,
+                property.Name,
+                typeSymbol.Name));
+        }
     }
 
     private static bool HasMessagePackEquatableAttribute(INamedTypeSymbol typeSymbol) =>
@@ -53,5 +80,18 @@ public class MessagePackEquatableAnalyzer : DiagnosticAnalyzer
         {
             Name: "MessagePackObjectAttribute",
             ContainingNamespace.Name: "MessagePack"
+        });
+
+    private static bool HasKeyAttribute(ImmutableArray<AttributeData> attributes) =>
+        attributes.Any(a => a.AttributeClass is { Name: "KeyAttribute", ContainingNamespace.Name: "MessagePack" });
+
+    private static bool HasIgnoreMemberAttribute(ImmutableArray<AttributeData> attributes) =>
+        attributes.Any(a => a.AttributeClass is { Name: "IgnoreMemberAttribute", ContainingNamespace.Name: "MessagePack" });
+
+    private static bool HasIgnoreEqualityAttribute(ImmutableArray<AttributeData> attributes) =>
+        attributes.Any(a => a.AttributeClass is
+        {
+            Name: "IgnoreEqualityAttribute",
+            ContainingNamespace: { Name: "Attributes", ContainingNamespace.Name: "Equatable" }
         });
 }

@@ -349,16 +349,38 @@ The analyzer validates every `[Equatable]` class at compile time and emits warni
 
 ### Missing attribute warnings
 
-| Diagnostic | Condition | Example |
-|---|---|---|
-| `EQ0001` | `IDictionary<K,V>` or `IReadOnlyDictionary<K,V>` property with no attribute | `Dictionary<string,int>? Map` |
-| `EQ0002` | `IEnumerable<T>` property (including `T[]`) with no attribute | `List<string>? Tags`, `int[]? Ids` |
-| `EQ0020` | `[DataContractEquatable]` used without `[DataContract]` on the same class | — |
-| `EQ0021` | `[MessagePackEquatable]` used without `[MessagePackObject]` on the same class | — |
+| Diagnostic | Applies to | Condition | Example |
+|---|---|---|---|
+| `EQ0001` | `[Equatable]` | `IDictionary<K,V>` or `IReadOnlyDictionary<K,V>` property has no attribute | `Dictionary<string,int>? Map` |
+| `EQ0002` | `[Equatable]` | `IEnumerable<T>` property (including `T[]`) has no attribute | `List<string>? Tags`, `int[]? Ids` |
+| `EQ0020` | `[DataContractEquatable]` | Class has no `[DataContract]` | — |
+| `EQ0021` | `[MessagePackEquatable]` | Class has no `[MessagePackObject]` | — |
+| `EQ0022` | `[DataContractEquatable]` | Public property has no `[DataMember]`, `[IgnoreDataMember]`, or `[IgnoreEquality]` | — |
+| `EQ0023` | `[MessagePackEquatable]` | Public property has no `[Key(n)]`, `[IgnoreMember]`, or `[IgnoreEquality]` | — |
+
+**EQ0001 / EQ0002** only apply to `[Equatable]` classes, where every public property is included by default and must be explicitly annotated for collection/dictionary types. Adapter generators (`[DataContractEquatable]`, `[MessagePackEquatable]`) auto-infer the correct comparer from the property type, so collection properties annotated with `[DataMember]` or `[Key(n)]` never need `[SequenceEquality]` or `[DictionaryEquality]`.
 
 Multi-dimensional arrays (`T[,]`, `T[,,]`) are exempt from EQ0002 because `MultiDimensionalArrayEqualityComparer` is always the default — no annotation is needed or accepted.
 
-EQ0020 and EQ0021 catch the case where the adapter attribute is added but the corresponding serialisation attribute is missing. Without `[DataContract]` the serialiser ignores all `[DataMember]` annotations, so the generated equality would silently include no properties. The same applies to `[MessagePackObject]` / `[Key(n)]`.
+**EQ0020 / EQ0021** catch the case where the adapter attribute is added but the corresponding serialisation attribute is missing. Without `[DataContract]` the serialiser ignores all `[DataMember]` annotations, so the generated equality would silently include no properties. The same applies to `[MessagePackObject]` / `[Key(n)]`.
+
+**EQ0022 / EQ0023** catch silently excluded properties on adapter-annotated types. The adapters only include properties that carry the serialisation inclusion attribute (`[DataMember]` / `[Key(n)]`) — all other public properties are silently skipped. This is intentional for computed properties or infrastructure fields you never want serialised, but an accidental omission is hard to notice. EQ0022/EQ0023 force the intent to be explicit: either add the inclusion attribute or add an explicit exclusion to suppress the warning:
+
+```csharp
+[DataContract]
+[DataContractEquatable]
+public partial class EventContract
+{
+    [DataMember(Order = 0)] public int EventId { get; set; }   // included ✓
+
+    // EQ0022 — silently excluded; was this intentional?
+    public DateTime LastSeen { get; set; }
+
+    [IgnoreDataMember]      public DateTime LastSeen { get; set; }  // explicit exclusion ✓
+    // or
+    [IgnoreEquality]        public DateTime LastSeen { get; set; }  // explicit exclusion ✓
+}
+```
 
 ### Invalid attribute warnings
 
