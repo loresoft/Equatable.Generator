@@ -120,7 +120,6 @@ These attributes live in `Equatable.Attributes` and control how each property is
 | `[SequenceEquality]` | `SequenceEqualityComparer` — order-sensitive element comparison | `List<T>`, `T[]`, `T[,]`, `T[,,]` |
 | `[HashSetEquality]` | `HashSetEqualityComparer` — order-insensitive element comparison | `HashSet<T>` |
 | `[DictionaryEquality]` | `DictionaryEqualityComparer` — key-value equality, insertion order irrelevant | `Dictionary<K,V>` |
-| `[DictionaryEquality(sequential:true)]` | `OrderedDictionaryEqualityComparer` — key-sorted comparison | — |
 
 ### `Equatable.Generator.DataContract` — class-level trigger
 
@@ -334,64 +333,6 @@ public Dictionary<string, double>? Prices { get; set; }  // DictionaryEquality b
 
 `{a:1.85, b:1.90}` equals `{b:1.90, a:1.85}` ✓
 
-### `[DictionaryEquality(sequential: true)]` — key-sorted comparison
-
-Both sides are sorted by key before comparison. The equality result is **identical** to plain `[DictionaryEquality]` for every possible input — `{a:1, b:2}` equals `{b:2, a:1}` under both. The difference is purely in the algorithm and its consequences:
-
-| | `[DictionaryEquality]` | `[DictionaryEquality(sequential: true)]` |
-|---|---|---|
-| Algorithm | `TryGetValue` per entry | `OrderBy(key)` then `SequenceEqual` |
-| Cost | O(n) average | O(n log n) |
-| Key type requirement | needs `IEqualityComparer<K>` | needs `IComparer<K>` for sort order |
-
-**When `sequential: true` is worth the cost:**
-
-The main practical reason is a custom `keyComparer` that implements **both** `IEqualityComparer<K>` and `IComparer<K>`. Plain `[DictionaryEquality]` only uses the equality side (`TryGetValue`). With `sequential: true`, the same comparer drives **both** equality and sort order.
-
-`StringComparer` is the canonical example — it implements both interfaces. Using `StringComparer.OrdinalIgnoreCase` as a key comparer means `"region"` and `"REGION"` are the same key, and keys sort in a predictable case-insensitive order:
-
-```csharp
-// Built with OrdinalIgnoreCase so "region" and "REGION" are the same key.
-var scores = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
-{
-    ["West"]   = 42,
-    ["east"]   = 17,
-    ["NORTH"]  = 99,
-};
-```
-
-With plain `[DictionaryEquality]`, `TryGetValue` uses the dictionary's own `OrdinalIgnoreCase` comparer for lookup — equality is correct. But `GetHashCode` iterates in arbitrary insertion order, so two equal dictionaries built in different insertion order may produce different hash codes.
-
-With `[DictionaryEquality(sequential: true)]`, `OrderedDictionaryEqualityComparer` receives `StringComparer.OrdinalIgnoreCase` as its `keyComparer`. Because `StringComparer` also implements `IComparer<string>`, it drives the sort in both `Equals` and `GetHashCode` — the iteration order is always `east → NORTH → West` (case-insensitive ordinal), regardless of insertion order:
-
-```csharp
-[Equatable]
-public partial class RegionScores
-{
-    // Sequential so the OrdinalIgnoreCase comparer controls sort order in GetHashCode,
-    // making the hash insertion-order independent even with a custom key comparer.
-    [DictionaryEquality(sequential: true)]
-    public Dictionary<string, int>? Scores { get; set; }
-}
-
-var a = new RegionScores { Scores = new(StringComparer.OrdinalIgnoreCase) { ["West"] = 42, ["east"] = 17 } };
-var b = new RegionScores { Scores = new(StringComparer.OrdinalIgnoreCase) { ["east"] = 17, ["West"] = 42 } };
-
-a.Equals(b);          // true  — same key/value pairs
-a.GetHashCode() == b.GetHashCode();  // true  — sort order is deterministic via OrdinalIgnoreCase
-```
-
-> **Note:** the comparer used by the generated code is `EqualityComparer<K>.Default` unless you override it explicitly via `[EqualityComparer]`. The dictionary's own internal comparer (set at construction time via `new Dictionary<K,V>(myComparer)`) is not visible to the generated equality code. This applies to any custom key comparer — case-insensitive strings are just one example; the same is true for any domain-specific comparison rule (version strings, culture-aware text, normalised identifiers, etc.).
-
-Both `[DictionaryEquality]` and `[DictionaryEquality(sequential: true)]` honour the supplied `keyComparer` correctly in both `Equals` and `GetHashCode`. Prefer `[DictionaryEquality]` — it is O(n) vs O(n log n) for `sequential: true`. Use `sequential: true` only when you need a deterministic, sorted iteration order for snapshot testing or diagnostic output.
-
-**Supported types:** same as `[DictionaryEquality]` — any `IReadOnlyDictionary<K,V>`.
-
-```csharp
-[DictionaryEquality(sequential: true)]
-public Dictionary<string, int>? RankByRegion { get; set; }
-```
-
 ---
 
 ## Nested collections
@@ -412,26 +353,6 @@ public Dictionary<string, List<int>>? ScoresByRegion { get; set; }
 // outer: DictionaryEquality
 // inner HashSet: HashSetEquality (default for HashSet<T>)
 public Dictionary<string, HashSet<string>>? TagsByRegion { get; set; }
-```
-
-### `[DictionaryEquality(sequential: true)]`
-
-Key-sorted comparison propagates into every nested dictionary level.
-
-```csharp
-// outer: key-sorted dict
-// inner Dictionary: key-sorted (propagated)
-[DictionaryEquality(sequential: true)]
-public Dictionary<string, Dictionary<string, int>>? ByRegionAndTeam { get; set; }
-
-// outer: key-sorted dict
-// inner List: SequenceEquality (default for List<T>)
-[DictionaryEquality(sequential: true)]
-public Dictionary<string, List<int>>? HistoryByRegion { get; set; }
-
-// three levels deep — propagation applies at every level
-[DictionaryEquality(sequential: true)]
-public Dictionary<string, Dictionary<string, Dictionary<string, int>>>? ThreeLevelConfig { get; set; }
 ```
 
 ### `[SequenceEquality]`
@@ -666,7 +587,6 @@ The hash contract is critical for correct behaviour when instances are used as d
 
 ### New features
 
-- **`[DictionaryEquality(sequential: true)]`** — key-sorted dictionary comparison. Both sides are sorted by key before comparison, producing deterministic equality regardless of insertion order. Useful for snapshot testing and diagnostic logging. Propagates into nested dictionary values.
 - **Direction overrides** — `[HashSetEquality]` on `List<T>` or `T[]` produces order-insensitive comparison; `[SequenceEquality]` on `HashSet<T>` enforces order-sensitive comparison.
 - **Nested collection comparer propagation** — a single annotation on the outer property propagates the chosen comparer kind into all nested levels. `Dictionary<K, Dictionary<K2,V>>`, `Dictionary<K, List<V>>`, and three-level nesting are all handled with a single annotation.
 - **`MultiDimensionalArrayEqualityComparer`** — structural equality for `T[,]`, `T[,,]`, and higher-rank arrays, applied automatically as the default. Checks rank, dimension lengths, and element values in row-major order.
@@ -684,7 +604,6 @@ The hash contract is critical for correct behaviour when instances are used as d
 
 - **Empty collections hash differently from null** — a sentinel value ensures `GetHashCode(empty) != GetHashCode(null)`, satisfying the hash contract.
 - **`HashSetEqualityComparer.GetHashCode` is order-independent** — uses a commutative accumulation strategy, consistent with `SetEquals`-based `Equals`.
-- **`[DictionaryEquality(sequential: true)]` propagates correctly** — key-sorted mode is applied to nested dictionary values, not only the outermost level.
 - **Value types without `==`** — `EqualityComparer<T>.Default` is used instead of direct operator comparison.
 
 ### Improvements

@@ -110,7 +110,7 @@ public abstract class UnannotatedBase
     // An explicit equality attribute on a [Key] property must override the inferred comparer.
 
     [Fact]
-    public Task GenerateMessagePackEquatableWithOrderedDictionaryOverride()
+    public Task GenerateMessagePackEquatableWithDictionaryEqualityOverride()
     {
         var source = @"
 using System.Collections.Generic;
@@ -122,13 +122,13 @@ namespace Equatable.Entities;
 
 [MessagePackObject]
 [MessagePackEquatable]
-public partial class OrderedContract
+public partial class DictionaryOverrideContract
 {
     [Key(0)]
     public int Id { get; set; }
 
     [Key(1)]
-    [DictionaryEquality(sequential: true)]
+    [DictionaryEquality]
     public Dictionary<string, int>? Tags { get; set; }
 }
 ";
@@ -341,37 +341,8 @@ public partial class SequenceOverrideContract
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
-    [Fact]
-    public Task GenerateMessagePackEquatableWithSequentialNestedDictPropagation()
-    {
-        var source = @"
-using System.Collections.Generic;
-using MessagePack;
-using Equatable.Attributes;
-using Equatable.Attributes.MessagePack;
-
-namespace Equatable.Entities;
-
-[MessagePackObject]
-[MessagePackEquatable]
-public partial class NestedOrderedContract
-{
-    [Key(0)]
-    public int Id { get; set; }
-
-    [Key(1)]
-    [DictionaryEquality(sequential: true)]
-    public Dictionary<string, Dictionary<string, int>>? NestedDicts { get; set; }
-}
-";
-        var (diagnostics, output) = GetGeneratedOutput<MessagePackEquatableGenerator>(source);
-        Assert.Empty(diagnostics);
-        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
-    }
-
     // ── dictKind propagation ──────────────────────────────────────────────────────────────────────
-    // Explicit [DictionaryEquality] kind propagates to ALL nested dictionary levels; nested
-    // enumerables keep their natural comparer.
+    // [DictionaryEquality] propagates to ALL nested dictionary levels; nested enumerables keep their natural comparer.
 
     [Fact]
     public Task GenerateMessagePackEquatableWithDictionaryEqualityPropagation()
@@ -392,20 +363,8 @@ public partial class DictPropagationContract
     public int Id { get; set; }
 
     [Key(1)]
-    [DictionaryEquality(sequential: true)]
-    public Dictionary<string, Dictionary<string, Dictionary<string, int>>>? ThreeLevelOrdered { get; set; }
-
-    [Key(2)]
-    [DictionaryEquality(sequential: true)]
-    public Dictionary<string, List<int>>? OrderedDictOfList { get; set; }
-
-    [Key(3)]
-    [DictionaryEquality(sequential: true)]
-    public Dictionary<string, Dictionary<string, List<int>>>? OrderedDictOfDictOfList { get; set; }
-
-    [Key(4)]
     [DictionaryEquality]
-    public Dictionary<string, Dictionary<string, int>>? UnorderedNestedDict { get; set; }
+    public Dictionary<string, Dictionary<string, int>>? NestedDicts { get; set; }
 }
 ";
         var (diagnostics, output) = GetGeneratedOutput<MessagePackEquatableGenerator>(source);

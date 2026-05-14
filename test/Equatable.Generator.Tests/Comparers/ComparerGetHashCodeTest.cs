@@ -183,45 +183,6 @@ public class ComparerGetHashCodeTest
         Assert.NotEqual(SeqComparer.GetHashCode(a), SeqComparer.GetHashCode(b));
     }
 
-    // ── OrderedDictionaryEqualityComparer ────────────────────────────────────────────────────────
-
-    private static readonly OrderedDictionaryEqualityComparer<string, int> OrderedDictComparer
-        = OrderedDictionaryEqualityComparer<string, int>.Default;
-
-    [Fact]
-    public void OrderedDictionary_Null_HashIsZero()
-    {
-        Assert.Equal(0, OrderedDictComparer.GetHashCode(null!));
-    }
-
-    [Fact]
-    public void OrderedDictionary_Empty_HashDiffersFromNull()
-    {
-        Assert.NotEqual(
-            OrderedDictComparer.GetHashCode(null!),
-            OrderedDictComparer.GetHashCode(new Dictionary<string, int>()));
-    }
-
-    [Fact]
-    public void OrderedDictionary_EqualCollections_SameHash()
-    {
-        // Ordered comparer is key-sorted — same content, different insertion order → equal
-        var a = new Dictionary<string, int> { ["a"] = 1, ["b"] = 2, ["c"] = 3 };
-        var b = new Dictionary<string, int> { ["c"] = 3, ["a"] = 1, ["b"] = 2 };
-
-        Assert.True(OrderedDictComparer.Equals(a, b));
-        Assert.Equal(OrderedDictComparer.GetHashCode(a), OrderedDictComparer.GetHashCode(b));
-    }
-
-    [Fact]
-    public void OrderedDictionary_DifferentValues_DifferentHash()
-    {
-        var a = new Dictionary<string, int> { ["a"] = 1 };
-        var b = new Dictionary<string, int> { ["a"] = 2 };
-
-        Assert.NotEqual(OrderedDictComparer.GetHashCode(a), OrderedDictComparer.GetHashCode(b));
-    }
-
     // ── Cross-comparer: empty vs single-element ──────────────────────────────────────────────────
 
     [Fact]

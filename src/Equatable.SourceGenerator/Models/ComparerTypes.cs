@@ -4,7 +4,6 @@ public enum ComparerTypes
 {
     Default,
     Dictionary,
-    OrderedDictionary,
     HashSet,
     Reference,
     Sequence,

@@ -863,30 +863,6 @@ public partial class Container
     }
 
     [Fact]
-    public Task GenerateSequentialDictionaryEquality()
-    {
-        var source = @"
-using System.Collections.Generic;
-using Equatable.Attributes;
-
-namespace Equatable.Entities;
-
-[Equatable]
-public partial class Container
-{
-    [DictionaryEquality(sequential: true)]
-    public Dictionary<string, int>? Entries { get; set; }
-
-    [DictionaryEquality(sequential: true)]
-    public IReadOnlyDictionary<string, int>? ReadOnlyEntries { get; set; }
-}
-";
-        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
-        Assert.Empty(diagnostics);
-        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
-    }
-
-    [Fact]
     public Task GenerateIEnumerableSequenceEquality()
     {
         var source = @"
@@ -1117,31 +1093,9 @@ public partial class Container
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
-    [Fact]
-    public Task GenerateSequentialDictionaryEquality_NestedDictPropagatesOrderedComparer()
-    {
-        var source = @"
-using System.Collections.Generic;
-using Equatable.Attributes;
-
-namespace Equatable.Entities;
-
-[Equatable]
-public partial class Container
-{
-    [DictionaryEquality(sequential: true)]
-    public Dictionary<string, Dictionary<string, int>>? NestedDicts { get; set; }
-}
-";
-        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
-        Assert.Empty(diagnostics);
-        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
-    }
-
     // ── dictKind propagation ──────────────────────────────────────────────────────────────────────
-    // When [DictionaryEquality] / [DictionaryEquality(sequential:true)] is set explicitly, the
-    // annotated kind propagates into ALL nested dictionary levels.  Nested enumerables (List, array,
-    // HashSet) keep their natural comparer regardless.
+    // [DictionaryEquality] propagates into ALL nested dictionary levels.
+    // Nested enumerables (List, array, HashSet) keep their natural comparer.
 
     [Fact]
     public Task GenerateDictionaryEqualityPropagatesIntoNestedDictionaries()
@@ -1155,19 +1109,7 @@ namespace Equatable.Entities;
 [Equatable]
 public partial class Container
 {
-    /// [DictionaryEquality(sequential:true)] on 3-level nest: all dict levels use Ordered.
-    [DictionaryEquality(sequential: true)]
-    public Dictionary<string, Dictionary<string, Dictionary<string, int>>>? ThreeLevelOrdered { get; set; }
-
-    /// [DictionaryEquality(sequential:true)] on dict-of-list: dict is ordered, inner list is natural Sequence.
-    [DictionaryEquality(sequential: true)]
-    public Dictionary<string, List<int>>? OrderedDictOfList { get; set; }
-
-    /// [DictionaryEquality(sequential:true)] on dict-of-dict-of-list: both dict levels ordered, inner list natural.
-    [DictionaryEquality(sequential: true)]
-    public Dictionary<string, Dictionary<string, List<int>>>? OrderedDictOfDictOfList { get; set; }
-
-    /// [DictionaryEquality] (unordered) on dict-of-dict: both dict levels unordered.
+    /// [DictionaryEquality] on dict-of-dict: both dict levels unordered.
     [DictionaryEquality]
     public Dictionary<string, Dictionary<string, int>>? UnorderedNestedDict { get; set; }
 }
