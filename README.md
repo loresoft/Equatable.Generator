@@ -283,7 +283,7 @@ public double[,,] Cube { get; set; }
 Two arrays are equal when:
 1. They have the **same rank** (`int[,]` ≠ `int[,,]`)
 2. Every **dimension length** matches (`[2,3]` ≠ `[3,2]`)
-3. Every **element** is equal in row-major order
+3. Every **element** is equal **in row-major order** (position matters)
 
 ```csharp
 var a = new int[,] { { 1, 2 }, { 3, 4 } };
