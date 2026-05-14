@@ -30,7 +30,7 @@ Console.WriteLine(a == b);  // false — List uses reference equality inside the
 
 Every reference type nested inside the record requires its own correct `IEquatable<T>` implementation, all the way down the object graph. That obligation compounds quickly in real domain models, and a missing implementation anywhere silently breaks equality without a compile error or warning.
 
-> **Edge case — `string` looks correct but for a different reason.** `string` is a reference type, yet record equality for `string` properties works as expected. This is not because records treat strings specially — it is because `string` already implements `IEquatable<string>` with value semantics. Any reference type that does *not* implement `IEquatable<T>` (such as `List<T>`, `Dictionary<K,V>`, or a plain class) silently falls back to reference equality inside a record.
+Note: `string` properties appear to work correctly in records because `string` already implements `IEquatable<string>` with value semantics — not because records provide any special handling. Any reference type that does not implement `IEquatable<T>` (`List<T>`, `Dictionary<K,V>`, custom classes) will silently use reference equality.
 
 The correct fix is to implement `IEquatable<T>` manually — but that creates a different set of problems. A hand-written `Equals` method must list every property explicitly, and in a large codebase it is easy to:
 
