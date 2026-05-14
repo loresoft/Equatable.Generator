@@ -299,14 +299,7 @@ var d = new int[,,] { { { 1, 2 }, { 3, 4 } } };
 
 ### Overrides for multi-dimensional arrays
 
-The outer comparer is always `MultiDimensionalArrayEqualityComparer` for rank ≥ 2 — it cannot be swapped for `SequenceEqualityComparer` or `HashSetEqualityComparer`. The only supported override is **element-level** via `[EqualityComparer]`:
-
-```csharp
-// outer: MultiDimensionalArrayEqualityComparer (cannot be changed)
-// inner elements: OrdinalIgnoreCase comparer (propagated into element comparison)
-[EqualityComparer(typeof(StringComparer), nameof(StringComparer.OrdinalIgnoreCase))]
-public string[,] Labels { get; set; }
-```
+The outer comparer is always `MultiDimensionalArrayEqualityComparer` for rank ≥ 2 — it cannot be swapped for `SequenceEqualityComparer` or `HashSetEqualityComparer`. There is no supported element-level override: `[EqualityComparer]` on a `T[,]` property bypasses `MultiDimensionalArrayEqualityComparer` entirely and compares the array as a single reference, which is incorrect. Use the default and rely on element type's own equality instead.
 
 Single-dimensional `T[]` is more flexible — it supports all comparer overrides:
 
