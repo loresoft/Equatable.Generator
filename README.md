@@ -36,7 +36,17 @@ This library generates correct `Equals` + `GetHashCode` at compile-time — zero
 <PackageReference Include="Equatable.Comparers" />
 ```
 
-`PrivateAssets="all"` on the generator is optional — it prevents the compile-time-only package from flowing to consumers of your library. `Equatable.Comparers` is the runtime package the generated code calls into and must be a real dependency.
+When using the adapter packages, add the corresponding adapter generator the same way:
+
+```xml
+<!-- DataContract adapter -->
+<PackageReference Include="Equatable.Generator.DataContract" PrivateAssets="all" />
+
+<!-- MessagePack adapter -->
+<PackageReference Include="Equatable.Generator.MessagePack" PrivateAssets="all" />
+```
+
+`PrivateAssets="all"` is optional on all generator packages — it prevents the compile-time-only package from flowing to consumers of your library. `Equatable.Comparers` is the runtime package the generated code calls into and must be a real dependency.
 
 Mark your class as `partial` and add `[Equatable]`:
 
