@@ -635,9 +635,9 @@ public partial class UserImport
     }
 
     [Fact]
-    public async Task AnalyzeMissingAttributeForMultiDimensionalArray()
+    public async Task AnalyzeMultiDimensionalArrayNoAttributeNoWarning()
     {
-        // int[,] without [SequenceEquality] → EQ0002
+        // int[,] without any attribute → no diagnostic (MultiDimensionalArrayEqualityComparer is the default)
         const string source = @"
 using Equatable.Attributes;
 
@@ -651,9 +651,7 @@ public partial class Grid
 ";
         var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
 
-        var diagnostic = Assert.Single(diagnostics);
-        Assert.Equal("EQ0002", diagnostic.Id);
-        Assert.Contains("Cells", diagnostic.GetMessage());
+        Assert.Empty(diagnostics);
     }
 
     [Fact]
@@ -714,6 +712,154 @@ public partial class UserImport
 {
     [SequenceEquality]
     public int[]? Codes { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        Assert.Empty(diagnostics);
+    }
+
+    // ── EQ0014 — invalid attribute on multi-dimensional array ─────────────────────────────────────
+
+    [Fact]
+    public async Task AnalyzeSequenceEqualityOnMultiDimArrayEmitsEQ0014()
+    {
+        // [SequenceEquality] on int[,] → EQ0014 (MultiDimensionalArrayEqualityComparer is always used)
+        const string source = @"
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Grid
+{
+    [SequenceEquality]
+    public int[,]? Cells { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0014", diagnostic.Id);
+        Assert.Contains("Cells", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeHashSetEqualityOnMultiDimArrayEmitsEQ0014()
+    {
+        // [HashSetEquality] on int[,] → EQ0014 only
+        // (ImplementsEnumerable returns true for all arrays, so EQ0012 does not fire;
+        //  the runtime validator in the generator would reject Rank > 1, but the analyzer
+        //  only emits EQ0014 to keep diagnostics non-overlapping)
+        const string source = @"
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Grid
+{
+    [HashSetEquality]
+    public int[,]? Cells { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0014", diagnostic.Id);
+        Assert.Contains("Cells", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeEqualityComparerOnMultiDimArrayEmitsEQ0014()
+    {
+        // [EqualityComparer] on int[,] → EQ0014 (bypasses MultiDimensionalArrayEqualityComparer entirely)
+        const string source = @"
+using System.Collections.Generic;
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Grid
+{
+    [EqualityComparer(typeof(MyComparer))]
+    public int[,]? Cells { get; set; }
+}
+
+public class MyComparer : IEqualityComparer<int[,]?>
+{
+    public static readonly MyComparer Default = new();
+    public bool Equals(int[,]? x, int[,]? y) => ReferenceEquals(x, y);
+    public int GetHashCode(int[,]? obj) => obj?.GetHashCode() ?? 0;
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0014", diagnostic.Id);
+        Assert.Contains("Cells", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeReferenceEqualityOnMultiDimArrayEmitsEQ0014()
+    {
+        // [ReferenceEquality] on int[,] → EQ0014
+        const string source = @"
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Grid
+{
+    [ReferenceEquality]
+    public int[,]? Cells { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0014", diagnostic.Id);
+        Assert.Contains("Cells", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeMultiDimArrayThreeDimensionsEmitsEQ0014()
+    {
+        // int[,,] with [SequenceEquality] → EQ0014 (rank 3 also triggers)
+        const string source = @"
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Cube
+{
+    [SequenceEquality]
+    public double[,,]? Data { get; set; }
+}
+";
+        var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("EQ0014", diagnostic.Id);
+        Assert.Contains("Data", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public async Task AnalyzeMultiDimArrayNoAttributeNoWarning()
+    {
+        // int[,,] without any attribute → no diagnostic (default comparer handles it)
+        const string source = @"
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class Cube
+{
+    public double[,,]? Data { get; set; }
 }
 ";
         var diagnostics = await AnalyzerTestHelper.GetAnalyzerDiagnosticsAsync(source);

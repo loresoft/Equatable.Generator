@@ -58,4 +58,13 @@ internal static class DiagnosticDescriptors
         isEnabledByDefault: true
     );
 
+    public static readonly DiagnosticDescriptor InvalidAttributeOnMultiDimensionalArray = new(
+        id: "EQ0014",
+        title: "Invalid Attribute on Multi-Dimensional Array",
+        messageFormat: "Attribute on property '{0}' has no effect on a multi-dimensional array (rank ≥ 2). MultiDimensionalArrayEqualityComparer is always used regardless of this attribute.",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true
+    );
+
 }

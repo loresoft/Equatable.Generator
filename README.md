@@ -333,6 +333,49 @@ public Dictionary<string, int>? AssetWeights { get; set; }
 
 ---
 
+## Build-time diagnostics
+
+The analyzer validates every `[Equatable]` class at compile time and emits warnings when attributes are missing or misused. These diagnostics are designed to surface mistakes that would otherwise produce silent wrong behavior at runtime.
+
+### Missing attribute warnings
+
+| Diagnostic | Condition | Example |
+|---|---|---|
+| `EQ0001` | `IDictionary<K,V>` or `IReadOnlyDictionary<K,V>` property with no attribute | `Dictionary<string,int>? Map` |
+| `EQ0002` | `IEnumerable<T>` property (including `T[]`) with no attribute | `List<string>? Tags`, `int[]? Ids` |
+
+Multi-dimensional arrays (`T[,]`, `T[,,]`) are exempt from EQ0002 because `MultiDimensionalArrayEqualityComparer` is always the default — no annotation is needed or accepted.
+
+### Invalid attribute warnings
+
+| Diagnostic | Condition |
+|---|---|
+| `EQ0010` | `[StringEquality]` on a non-`string` property |
+| `EQ0011` | `[DictionaryEquality]` on a type that does not implement `IDictionary<K,V>` or `IReadOnlyDictionary<K,V>` |
+| `EQ0012` | `[HashSetEquality]` on a type that does not implement `IEnumerable<T>` |
+| `EQ0013` | `[SequenceEquality]` on a type that does not implement `IEnumerable<T>` |
+| `EQ0014` | Any collection or equality attribute on a multi-dimensional array (`rank ≥ 2`) |
+
+### EQ0014 — attributes have no effect on multi-dimensional arrays
+
+`EQ0014` fires whenever any collection or equality attribute (`[SequenceEquality]`, `[HashSetEquality]`, `[DictionaryEquality]`, `[EqualityComparer]`, `[ReferenceEquality]`) is placed on a `T[,]` or higher-rank array property. This is intentional and expected — it is not possible to override the comparer for a multi-dimensional array:
+
+- `[SequenceEquality]` and `[HashSetEquality]` are silently ignored; `MultiDimensionalArrayEqualityComparer` is used regardless.
+- `[EqualityComparer(typeof(MyComparer))]` appears to work but actually bypasses `MultiDimensionalArrayEqualityComparer` entirely, passing the whole array object as a single value to `MyComparer`. The result is effectively reference equality — almost certainly not what was intended.
+
+The diagnostic turns a silent, surprising behavior into a loud, visible one at compile time:
+
+```csharp
+// EQ0014 — attribute has no effect on rank-2 array
+[SequenceEquality]
+public int[,]? Grid { get; set; }
+
+// Correct — no attribute needed; MultiDimensionalArrayEqualityComparer is the default
+public int[,]? Grid { get; set; }
+```
+
+---
+
 ## Equality invariants
 
 Every generated implementation satisfies:

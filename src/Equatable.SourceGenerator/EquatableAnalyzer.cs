@@ -16,7 +16,8 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
             DiagnosticDescriptors.InvalidStringEqualityAttributeUsage,
             DiagnosticDescriptors.InvalidDictionaryEqualityAttributeUsage,
             DiagnosticDescriptors.InvalidHashSetEqualityAttributeUsage,
-            DiagnosticDescriptors.InvalidSequenceEqualityAttributeUsage
+            DiagnosticDescriptors.InvalidSequenceEqualityAttributeUsage,
+            DiagnosticDescriptors.InvalidAttributeOnMultiDimensionalArray
         );
 
     public override void Initialize(AnalysisContext context)
@@ -72,6 +73,7 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
     {
         var attributes = property.GetAttributes();
         var hasEqualityAttribute = false;
+        var isMultiDimArray = property.Type is IArrayTypeSymbol { Rank: > 1 };
 
         foreach (var attribute in attributes)
         {
@@ -84,6 +86,16 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
             var attributeLocation = attribute.ApplicationSyntaxReference
                 ?.GetSyntax(context.CancellationToken).GetLocation()
                 ?? property.Locations.FirstOrDefault();
+
+            // Any collection/equality attribute on a multi-dimensional array has no effect:
+            // MultiDimensionalArrayEqualityComparer is always used regardless of the annotation.
+            if (isMultiDimArray && IsCollectionOrEqualityAttribute(className))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    DiagnosticDescriptors.InvalidAttributeOnMultiDimensionalArray,
+                    attributeLocation,
+                    property.Name));
+            }
 
             if (className == "StringEqualityAttribute" && !IsString(property.Type))
             {
@@ -118,8 +130,10 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
             }
         }
 
-        // Warn when a collection/dictionary property has no equality attribute
-        if (!hasEqualityAttribute)
+        // Warn when a collection/dictionary property has no equality attribute.
+        // Multi-dimensional arrays are exempt: they always use MultiDimensionalArrayEqualityComparer
+        // by default and do not require an explicit annotation.
+        if (!hasEqualityAttribute && !isMultiDimArray)
         {
             var propertyLocation = property.Locations.FirstOrDefault();
 
@@ -139,6 +153,14 @@ public class EquatableAnalyzer : DiagnosticAnalyzer
             }
         }
     }
+
+    private static bool IsCollectionOrEqualityAttribute(string? className) =>
+        className is "SequenceEqualityAttribute"
+            or "HashSetEqualityAttribute"
+            or "DictionaryEqualityAttribute"
+            or "EqualityComparerAttribute"
+            or "ReferenceEqualityAttribute"
+            or "StringEqualityAttribute";
 
     private static bool HasEquatableAttribute(INamedTypeSymbol typeSymbol)
     {
