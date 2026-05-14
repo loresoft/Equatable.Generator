@@ -381,7 +381,7 @@ a.Equals(b);          // true  — same key/value pairs
 a.GetHashCode() == b.GetHashCode();  // true  — sort order is deterministic via OrdinalIgnoreCase
 ```
 
-> **Note:** the comparer passed to `OrderedDictionaryEqualityComparer` must be the one you supply via `[EqualityComparer]` or the generator's inferred default. The dictionary's own internal comparer (set at construction time via `new Dictionary<K,V>(myComparer)`) is not visible to the generated equality code — the generated code uses `EqualityComparer<K>.Default` unless you override it explicitly.
+> **Note:** the comparer used by the generated code is `EqualityComparer<K>.Default` unless you override it explicitly via `[EqualityComparer]`. The dictionary's own internal comparer (set at construction time via `new Dictionary<K,V>(myComparer)`) is not visible to the generated equality code. This applies to any custom key comparer — case-insensitive strings are just one example; the same is true for any domain-specific comparison rule (version strings, culture-aware text, normalised identifiers, etc.).
 
 For plain `Dictionary<string, int>` with default comparers, prefer `[DictionaryEquality]` — the O(n) `TryGetValue` path is faster and produces the same result.
 
