@@ -64,17 +64,58 @@ The generator writes `Equals` and `GetHashCode` for every public property. Works
 
 ## All attributes at a glance
 
+### `Equatable.Generator` — class-level trigger
+
+| Attribute | What it does |
+|---|---|
+| `[Equatable]` | Triggers generation; includes all public properties |
+
+### `Equatable.Generator` — property-level equality control
+
+These attributes live in `Equatable.Attributes` and control how each property is compared.
+
 | Attribute | What it generates | Default for |
 |---|---|---|
-| `[Equatable]` | Triggers generation; includes all public properties | — |
 | `[IgnoreEquality]` | Skip this property | — |
 | `[StringEquality(StringComparison.X)]` | `StringComparer.X.Equals(a, b)` | — |
 | `[EqualityComparer(typeof(T))]` | `T.Default.Equals(a, b)` — any custom comparer | — |
+| `[ReferenceEquality]` | `Object.ReferenceEquals(a, b)` | — |
 | `[SequenceEquality]` | `SequenceEqualityComparer` — element order matters | `List<T>`, `T[]`, `T[,]`, `T[,,]` |
 | `[HashSetEquality]` | `HashSetEqualityComparer` — element order ignored | `HashSet<T>` |
-| `[DictionaryEquality]` | `ReadOnlyDictionaryEqualityComparer` — key-value equality | `Dictionary<K,V>` |
-| `[DictionaryEquality(sequential:true)]` | `OrderedReadOnlyDictionaryEqualityComparer` — key-sorted | — |
-| `[ReferenceEquality]` | `Object.ReferenceEquals(a, b)` | — |
+| `[DictionaryEquality]` | `DictionaryEqualityComparer` — key-value equality, insertion order irrelevant | `Dictionary<K,V>` |
+| `[DictionaryEquality(sequential:true)]` | `OrderedDictionaryEqualityComparer` — key-sorted comparison | — |
+
+### `Equatable.Generator.DataContract` — class-level trigger
+
+| Attribute | Package | What it does |
+|---|---|---|
+| `[DataContractEquatable]` | `Equatable.Generator.DataContract` | Triggers generation; reads `[DataMember]` to select properties |
+
+Property selection uses `System.Runtime.Serialization` attributes — these are not part of `Equatable.Generator.DataContract` itself, they come from the BCL or the serialisation library you already use:
+
+| Attribute | Source | Effect |
+|---|---|---|
+| `[DataMember]` | `System.Runtime.Serialization` | Include this property in equality |
+| `[IgnoreDataMember]` | `System.Runtime.Serialization` | Explicitly exclude this property |
+| `[IgnoreEquality]` | `Equatable.Attributes` | Explicitly exclude this property |
+
+All property-level equality attributes from `Equatable.Generator` (`[SequenceEquality]`, `[DictionaryEquality]`, `[StringEquality]`, `[EqualityComparer]`, `[ReferenceEquality]`) work as overrides on `[DataMember]` properties. Collection comparers are inferred automatically when no override is present.
+
+### `Equatable.Generator.MessagePack` — class-level trigger
+
+| Attribute | Package | What it does |
+|---|---|---|
+| `[MessagePackEquatable]` | `Equatable.Generator.MessagePack` | Triggers generation; reads `[Key(n)]` to select properties |
+
+Property selection uses MessagePack attributes — these come from the `MessagePack` package you already use:
+
+| Attribute | Source | Effect |
+|---|---|---|
+| `[Key(n)]` | `MessagePack` | Include this property in equality |
+| `[IgnoreMember]` | `MessagePack` | Explicitly exclude this property |
+| `[IgnoreEquality]` | `Equatable.Attributes` | Explicitly exclude this property |
+
+All property-level equality attributes from `Equatable.Generator` work as overrides on `[Key(n)]` properties. Collection comparers are inferred automatically when no override is present.
 
 ## Adapter generators
 
