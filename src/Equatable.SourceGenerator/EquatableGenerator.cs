@@ -209,6 +209,8 @@ public class EquatableGenerator : IIncrementalGenerator
             IArrayTypeSymbol arrayType => BuildArrayComparerExpression(arrayType),
             INamedTypeSymbol namedType when IsDictionary(namedType) || namedType.AllInterfaces.Any(IsDictionary)
                 => BuildInferredCollectionExpression(namedType, ComparerTypes.Dictionary),
+            INamedTypeSymbol namedType when IsSet(namedType) || namedType.AllInterfaces.Any(IsSet)
+                => BuildInferredCollectionExpression(namedType, ComparerTypes.HashSet),
             INamedTypeSymbol namedType when !IsString(namedType)
                 && (IsEnumerable(namedType) || namedType.AllInterfaces.Any(IsEnumerable))
                 => BuildInferredCollectionExpression(namedType, ComparerTypes.Sequence),
@@ -271,6 +273,19 @@ public class EquatableGenerator : IIncrementalGenerator
                 return $"new global::Equatable.Comparers.SequenceEqualityComparer<{elementTypeFq}>({innerExpr})";
 
             return $"global::Equatable.Comparers.SequenceEqualityComparer<{elementTypeFq}>.Default";
+        }
+
+        if (kind == ComparerTypes.HashSet && enumInterface != null)
+        {
+            var elementType = enumInterface.TypeArguments[0];
+            var elementTypeFq = elementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+            var innerExpr = BuildElementComparerExpression(elementType);
+
+            if (innerExpr != null)
+                return $"new global::Equatable.Comparers.HashSetEqualityComparer<{elementTypeFq}>({innerExpr})";
+
+            return $"global::Equatable.Comparers.HashSetEqualityComparer<{elementTypeFq}>.Default";
         }
 
         return null;
@@ -669,6 +684,26 @@ public class EquatableGenerator : IIncrementalGenerator
         return targetSymbol is
         {
             Name: "IEnumerable",
+            IsGenericType: true,
+            TypeArguments.Length: 1,
+            TypeParameters.Length: 1,
+            ContainingNamespace:
+            {
+                Name: "Generic",
+                ContainingNamespace:
+                {
+                    Name: "Collections",
+                    ContainingNamespace.Name: "System"
+                }
+            }
+        };
+    }
+
+    private static bool IsSet(INamedTypeSymbol targetSymbol)
+    {
+        return targetSymbol is
+        {
+            Name: "ISet" or "IReadOnlySet",
             IsGenericType: true,
             TypeArguments.Length: 1,
             TypeParameters.Length: 1,

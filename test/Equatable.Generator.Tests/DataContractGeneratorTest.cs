@@ -178,6 +178,39 @@ public partial class ContractWithCollections
         return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
     }
 
+    // ── inferred HashSet / IReadOnlySet comparers ────────────────────────────────────────────────
+    // HashSet<T> and IReadOnlySet<T> with no explicit attribute must infer HashSetEquality, not
+    // SequenceEquality. Regression test for InferCollectionComparer missing the ISet<T> branch.
+
+    [Fact]
+    public Task GenerateDataContractEquatableWithInferredHashSetComparers()
+    {
+        var source = @"
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Equatable.Attributes.DataContract;
+
+namespace Equatable.Entities;
+
+[DataContract]
+[DataContractEquatable]
+public partial class ContractWithHashSets
+{
+    [DataMember(Order = 0)]
+    public int Id { get; set; }
+
+    [DataMember(Order = 1)]
+    public HashSet<string>? Tags { get; set; }
+
+    [DataMember(Order = 2)]
+    public IReadOnlySet<int>? Codes { get; set; }
+}
+";
+        var (diagnostics, output) = GetGeneratedOutput<DataContractEquatableGenerator>(source);
+        Assert.Empty(diagnostics);
+        return Verifier.Verify(output).UseDirectory("Snapshots").ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
     // ── nested collection comparers ───────────────────────────────────────────────────────────────
     // Adapter inference must recurse into nested types and compose structural comparers.
     // e.g. Dictionary<string, List<int>> → DictionaryEqualityComparer with SequenceEqualityComparer
