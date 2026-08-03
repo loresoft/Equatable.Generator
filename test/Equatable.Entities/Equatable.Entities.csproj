@@ -16,8 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Equatable.Generator\Equatable.Generator.csproj" />
-    <ProjectReference Include="..\..\src\Equatable.SourceGenerator\Equatable.SourceGenerator.csproj">
+    <ProjectReference Include="..\..\src\Equatable.Generator\Equatable.Generator.csproj">
       <OutputItemType>Analyzer</OutputItemType>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>

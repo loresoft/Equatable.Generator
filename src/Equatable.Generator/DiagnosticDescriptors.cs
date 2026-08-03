@@ -1,6 +1,6 @@
 using Microsoft.CodeAnalysis;
 
-namespace Equatable.SourceGenerator;
+namespace Equatable.Generator;
 
 internal static class DiagnosticDescriptors
 {

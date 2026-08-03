@@ -1,15 +1,34 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net8.0;net9.0;net10.0</TargetFrameworks>
-    <RootNamespace>Equatable</RootNamespace>
-    <Description>Source generator for Equals and GetHashCode with attribute based control of equality implementation</Description>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <IsPackable>true</IsPackable>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\Equatable.SourceGenerator\bin\$(Configuration)\netstandard2.0\Equatable.SourceGenerator.dll" PackagePath="analyzers/dotnet/roslyn4.8/cs" Pack="true" Visible="false" />
-    <None Include="..\Equatable.SourceGenerator\Equatable.Generator.targets" PackagePath="build" Pack="true" Visible="false" />
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
 
+  <ItemGroup>
+    <!-- https://learn.microsoft.com/en-us/visualstudio/extensibility/roslyn-version-support -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\Equatable.Shared\Attributes.cs" LogicalName="Equatable.Generator.Embedded.Attributes.cs" />
+    <EmbeddedResource Include="..\Equatable.Shared\Comparer.cs" LogicalName="Equatable.Generator.Embedded.Comparer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll" PackagePath="analyzers/dotnet/cs" Pack="true" Visible="false" />
+    <None Include="Equatable.Generator.targets" PackagePath="build/$(PackageId).targets" Pack="true" Visible="true" />
   </ItemGroup>
 
 </Project>

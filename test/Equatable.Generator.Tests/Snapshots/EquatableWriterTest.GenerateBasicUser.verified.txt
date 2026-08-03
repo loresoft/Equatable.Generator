@@ -14,7 +14,6 @@ namespace Equatable.Entities
                 && global::System.Collections.Generic.EqualityComparer<string?>.Default.Equals(LastName, other.LastName)
                 && global::System.Collections.Generic.EqualityComparer<string>.Default.Equals(EmailAddress, other.EmailAddress)
                 && global::System.Collections.Generic.EqualityComparer<System.DateTimeOffset>.Default.Equals(Created, other.Created);
-
         }
 
         /// <inheritdoc />
@@ -36,16 +35,15 @@ namespace Equatable.Entities
         }
 
         /// <inheritdoc />
-        public override int GetHashCode(){
-            int hashCode = -1758092530;
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(Id!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(FirstName!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(LastName!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<string>.Default.GetHashCode(EmailAddress!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<System.DateTimeOffset>.Default.GetHashCode(Created!);
+        public override int GetHashCode()
+        {
+            int hashCode = global::Equatable.Comparer.HashSeed;
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<int>.Default.GetHashCode(Id!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(FirstName!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<string?>.Default.GetHashCode(LastName!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<string>.Default.GetHashCode(EmailAddress!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<System.DateTimeOffset>.Default.GetHashCode(Created!);
             return hashCode;
-
         }
-
     }
 }

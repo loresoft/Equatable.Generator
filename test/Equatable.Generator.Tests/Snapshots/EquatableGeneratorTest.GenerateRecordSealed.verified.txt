@@ -19,25 +19,23 @@ namespace Equatable.Entities
                 && Updated == other.Updated
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(UpdatedBy, other.UpdatedBy)
                 && RowVersion == other.RowVersion;
-
         }
 
         /// <inheritdoc />
-        public override int GetHashCode(){
-            int hashCode = -386483248;
-            hashCode = (hashCode * -1521134295) + Id.GetHashCode();
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.GetHashCode(Name!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Description!);
-            hashCode = (hashCode * -1521134295) + DisplayOrder.GetHashCode();
-            hashCode = (hashCode * -1521134295) + IsActive.GetHashCode();
-            hashCode = (hashCode * -1521134295) + Created.GetHashCode();
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(CreatedBy!);
-            hashCode = (hashCode * -1521134295) + Updated.GetHashCode();
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(UpdatedBy!);
-            hashCode = (hashCode * -1521134295) + RowVersion.GetHashCode();
+        public override int GetHashCode()
+        {
+            int hashCode = global::Equatable.Comparer.HashSeed;
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + Id.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.GetHashCode(Name!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Description!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + DisplayOrder.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + IsActive.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + Created.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(CreatedBy!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + Updated.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(UpdatedBy!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + RowVersion.GetHashCode();
             return hashCode;
-
         }
-
     }
 }

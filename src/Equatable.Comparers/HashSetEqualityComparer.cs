@@ -59,7 +59,7 @@ public class HashSetEqualityComparer<TValue> : IEqualityComparer<IEnumerable<TVa
         var hashCode = new HashCode();
 
         // sort to ensure set with different order are the same
-        foreach (var item in obj.OrderBy(s => s))
+        foreach (var item in obj.OrderBy(static s => s))
             hashCode.Add(item, Comparer);
 
         return hashCode.ToHashCode();

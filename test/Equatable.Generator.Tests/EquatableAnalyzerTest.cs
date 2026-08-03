@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 
 using Equatable.Attributes;
-using Equatable.SourceGenerator;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -590,8 +589,11 @@ public partial class Priority : ModelBase
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
+        var generatorDriver = CSharpGeneratorDriver.Create(new EquatableGenerator());
+        generatorDriver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out _);
+
         var analyzer = new EquatableAnalyzer();
-        var compilationWithAnalyzers = compilation.WithAnalyzers([analyzer]);
+        var compilationWithAnalyzers = outputCompilation.WithAnalyzers([analyzer]);
 
         return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync();
     }

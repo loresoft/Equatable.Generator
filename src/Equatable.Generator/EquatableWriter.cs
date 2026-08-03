@@ -1,8 +1,9 @@
-using Equatable.SourceGenerator.Models;
+using Equatable.Generator.Infrastructure;
+using Equatable.Generator.Models;
 
 using Microsoft.CodeAnalysis;
 
-namespace Equatable.SourceGenerator;
+namespace Equatable.Generator;
 
 public static class EquatableWriter
 {
@@ -66,7 +67,7 @@ public static class EquatableWriter
             .AppendLine("}"); // class
 
         // support nested types
-        foreach (var containingClass in entityClass.ContainingTypes)
+        foreach (var _ in entityClass.ContainingTypes)
         {
             codeBuilder
                 .DecrementIndent()
@@ -130,7 +131,7 @@ public static class EquatableWriter
             {
                 case ComparerTypes.Dictionary:
                     codeBuilder
-                        .Append(" DictionaryEquals(")
+                        .Append(" global::Equatable.Comparer.DictionaryEquals(")
                         .Append(entityProperty.PropertyName)
                         .Append(", other.")
                         .Append(entityProperty.PropertyName)
@@ -139,7 +140,7 @@ public static class EquatableWriter
                     break;
                 case ComparerTypes.HashSet:
                     codeBuilder
-                        .Append(" HashSetEquals(")
+                        .Append(" global::Equatable.Comparer.HashSetEquals(")
                         .Append(entityProperty.PropertyName)
                         .Append(", other.")
                         .Append(entityProperty.PropertyName)
@@ -157,7 +158,7 @@ public static class EquatableWriter
                     break;
                 case ComparerTypes.Sequence:
                     codeBuilder
-                        .Append(" SequenceEquals(")
+                        .Append(" global::Equatable.Comparer.SequenceEquals(")
                         .Append(entityProperty.PropertyName)
                         .Append(", other.")
                         .Append(entityProperty.PropertyName)
@@ -213,101 +214,12 @@ public static class EquatableWriter
         }
 
         codeBuilder
-            .AppendLine(";")
-            .AppendLine();
-
-        GenerateEquatableFunctions(codeBuilder, entityClass);
+            .AppendLine(";");
 
         codeBuilder
             .DecrementIndent()
             .AppendLine("}")
             .AppendLine();
-    }
-
-    private static void GenerateEquatableFunctions(IndentedStringBuilder codeBuilder, EquatableClass entityClass)
-    {
-        if (entityClass is null)
-            return;
-
-        if (entityClass.Properties.Any(p => p.ComparerType == ComparerTypes.Dictionary))
-        {
-            codeBuilder
-                .AppendLine("static bool DictionaryEquals<TKey, TValue>(global::System.Collections.Generic.IDictionary<TKey, TValue>? left, global::System.Collections.Generic.IDictionary<TKey, TValue>? right)")
-                .AppendLine("{")
-                .IncrementIndent()
-                .AppendLine("if (global::System.Object.ReferenceEquals(left, right))")
-                .AppendLine("    return true;")
-                .AppendLine()
-                .AppendLine("if (left is null || right is null)")
-                .AppendLine("    return false;")
-                .AppendLine()
-                .AppendLine("if (left.Count != right.Count)")
-                .AppendLine("    return false;")
-                .AppendLine();
-
-            codeBuilder
-                .AppendLine("foreach (var pair in left)")
-                .AppendLine("{")
-                .IncrementIndent()
-                .AppendLine("if (!right.TryGetValue(pair.Key, out var value))")
-                .AppendLine("    return false;")
-                .AppendLine()
-                .AppendLine("if (!global::System.Collections.Generic.EqualityComparer<TValue>.Default.Equals(pair.Value, value))")
-                .AppendLine("    return false;")
-                .AppendLine()
-                .DecrementIndent()
-                .AppendLine("}"); // foreach
-
-            codeBuilder
-                .AppendLine()
-                .AppendLine("return true;")
-                .DecrementIndent()
-                .AppendLine("}")
-                .AppendLine();
-        }
-
-        if (entityClass.Properties.Any(p => p.ComparerType == ComparerTypes.HashSet))
-        {
-            codeBuilder
-                .AppendLine("static bool HashSetEquals<T>(global::System.Collections.Generic.IEnumerable<T>? left, global::System.Collections.Generic.IEnumerable<T>? right)")
-                .AppendLine("{")
-                .IncrementIndent()
-                .AppendLine("if (global::System.Object.ReferenceEquals(left, right))")
-                .AppendLine("    return true;")
-                .AppendLine()
-                .AppendLine("if (left is null || right is null)")
-                .AppendLine("    return false;")
-                .AppendLine()
-                .AppendLine("if (left is global::System.Collections.Generic.ISet<T> leftSet)")
-                .AppendLine("    return leftSet.SetEquals(right);")
-                .AppendLine()
-                .AppendLine("if (right is global::System.Collections.Generic.ISet<T> rightSet)")
-                .AppendLine("    return rightSet.SetEquals(left);")
-                .AppendLine()
-                .AppendLine("var hashSet = new global::System.Collections.Generic.HashSet<T>(left, global::System.Collections.Generic.EqualityComparer<T>.Default);")
-                .AppendLine("return hashSet.SetEquals(right);")
-                .DecrementIndent()
-                .AppendLine("}")
-                .AppendLine();
-        }
-
-        if (entityClass.Properties.Any(p => p.ComparerType == ComparerTypes.Sequence))
-        {
-            codeBuilder
-                .AppendLine("static bool SequenceEquals<T>(global::System.Collections.Generic.IEnumerable<T>? left, global::System.Collections.Generic.IEnumerable<T>? right)")
-                .AppendLine("{")
-                .IncrementIndent()
-                .AppendLine("if (global::System.Object.ReferenceEquals(left, right))")
-                .AppendLine("    return true;")
-                .AppendLine()
-                .AppendLine("if (left is null || right is null)")
-                .AppendLine("    return false;")
-                .AppendLine()
-                .AppendLine("return global::System.Linq.Enumerable.SequenceEqual(left, right, global::System.Collections.Generic.EqualityComparer<T>.Default);")
-                .DecrementIndent()
-                .AppendLine("}")
-                .AppendLine();
-        }
     }
 
     private static void GenerateEquals(IndentedStringBuilder codeBuilder, EquatableClass entityClass)
@@ -402,17 +314,15 @@ public static class EquatableWriter
             .Append("\", \"")
             .Append(ThisAssembly.InformationalVersion)
             .AppendLine("\")]")
-            .Append("public override int GetHashCode()")
+            .AppendLine("public override int GetHashCode()")
             .AppendLine("{")
             .IncrementIndent();
 
         codeBuilder
-            .Append("int hashCode = ")
-            .Append(entityClass.SeedHash)
-            .AppendLine(";");
+            .AppendLine("int hashCode = global::Equatable.Comparer.HashSeed;");
 
         if (entityClass.IncludeBaseHashMethod)
-            codeBuilder.AppendLine("hashCode = (hashCode * -1521134295) + base.GetHashCode();");
+            codeBuilder.AppendLine("hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + base.GetHashCode();");
 
         foreach (var entityProperty in entityClass.Properties)
         {
@@ -420,35 +330,35 @@ public static class EquatableWriter
             {
                 case ComparerTypes.Dictionary:
                     codeBuilder
-                        .Append("hashCode = (hashCode * -1521134295) + ")
-                        .Append("DictionaryHashCode(")
+                        .Append("hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + ")
+                        .Append("global::Equatable.Comparer.DictionaryHashCode(")
                         .Append(entityProperty.PropertyName)
                         .AppendLine(");");
                     break;
                 case ComparerTypes.HashSet:
                     codeBuilder
-                        .Append("hashCode = (hashCode * -1521134295) + ")
-                        .Append("HashSetHashCode(")
+                        .Append("hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + ")
+                        .Append("global::Equatable.Comparer.HashSetHashCode(")
                         .Append(entityProperty.PropertyName)
                         .AppendLine(");");
                     break;
                 case ComparerTypes.Reference:
                     codeBuilder
-                        .Append("hashCode = (hashCode * -1521134295) + ")
+                        .Append("hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + ")
                         .Append("global::System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(")
                         .Append(entityProperty.PropertyName)
                         .AppendLine("!);");
                     break;
                 case ComparerTypes.Sequence:
                     codeBuilder
-                        .Append("hashCode = (hashCode * -1521134295) + ")
-                        .Append("SequenceHashCode(")
+                        .Append("hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + ")
+                        .Append("global::Equatable.Comparer.SequenceHashCode(")
                         .Append(entityProperty.PropertyName)
                         .AppendLine(");");
                     break;
                 case ComparerTypes.String:
                     codeBuilder
-                        .Append("hashCode = (hashCode * -1521134295) + ")
+                        .Append("hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + ")
                         .Append("global::System.StringComparer.")
                         .Append(entityProperty.ComparerName)
                         .Append(".GetHashCode(")
@@ -457,7 +367,7 @@ public static class EquatableWriter
                     break;
                 case ComparerTypes.Custom:
                     codeBuilder
-                        .Append("hashCode = (hashCode * -1521134295) + ")
+                        .Append("hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + ")
                         .Append(entityProperty.ComparerName)
                         .Append(".")
                         .Append(entityProperty.ComparerInstance ?? "Default")
@@ -467,13 +377,13 @@ public static class EquatableWriter
                     break;
                 case ComparerTypes.ValueType:
                     codeBuilder
-                        .Append("hashCode = (hashCode * -1521134295) + ")
+                        .Append("hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + ")
                         .Append(entityProperty.PropertyName)
                         .AppendLine(".GetHashCode();");
                     break;
                 default:
                     codeBuilder
-                        .Append("hashCode = (hashCode * -1521134295) + ")
+                        .Append("hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + ")
                         .Append("global::System.Collections.Generic.EqualityComparer<")
                         .Append(entityProperty.PropertyType)
                         .Append(">.Default.GetHashCode(")
@@ -484,97 +394,10 @@ public static class EquatableWriter
         }
 
         codeBuilder
-            .AppendLine("return hashCode;")
-            .AppendLine();
-
-        GenerateHashCodeFunctions(codeBuilder, entityClass);
+            .AppendLine("return hashCode;");
 
         codeBuilder
             .DecrementIndent()
-            .AppendLine("}")
-            .AppendLine();
-    }
-
-    private static void GenerateHashCodeFunctions(IndentedStringBuilder codeBuilder, EquatableClass entityClass)
-    {
-        if (entityClass is null)
-            return;
-
-        if (entityClass.Properties.Any(p => p.ComparerType == ComparerTypes.Dictionary))
-        {
-            codeBuilder
-                .AppendLine("static int DictionaryHashCode<TKey, TValue>(global::System.Collections.Generic.IDictionary<TKey, TValue>? items)")
-                .AppendLine("{")
-                .IncrementIndent()
-                .AppendLine("if (items is null)")
-                .AppendLine("    return 0;")
-                .AppendLine();
-
-            codeBuilder
-                .Append("int hashCode = ")
-                .Append(entityClass.SeedHash)
-                .AppendLine(";")
-                .AppendLine()
-                .AppendLine("// sort by key to ensure dictionary with different order are the same")
-                .AppendLine("foreach (var item in global::System.Linq.Enumerable.OrderBy(items, d => d.Key))")
-                .AppendLine("{")
-                .IncrementIndent()
-                .AppendLine("hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<TKey>.Default.GetHashCode(item.Key!);")
-                .AppendLine("hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<TValue>.Default.GetHashCode(item.Value!);")
-                .DecrementIndent()
-                .AppendLine("}"); // foreach
-
-            codeBuilder
-                .AppendLine()
-                .AppendLine("return hashCode;")
-                .DecrementIndent()
-                .AppendLine("}")
-                .AppendLine();
-        }
-
-        if (entityClass.Properties.Any(p => p.ComparerType == ComparerTypes.HashSet))
-        {
-            codeBuilder
-                .AppendLine("static int HashSetHashCode<T>(global::System.Collections.Generic.IEnumerable<T>? items)")
-                .AppendLine("{")
-                .IncrementIndent()
-                .AppendLine("if (items is null)")
-                .AppendLine("    return 0;")
-                .AppendLine()
-                .Append("int hashCode = ")
-                .Append(entityClass.SeedHash)
-                .AppendLine(";")
-                .AppendLine()
-                .AppendLine("// sort to ensure set with different order are the same")
-                .AppendLine("foreach (var item in global::System.Linq.Enumerable.OrderBy(items, d => d))")
-                .AppendLine("    hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<T>.Default.GetHashCode(item!);")
-                .AppendLine()
-                .AppendLine("return hashCode;")
-                .DecrementIndent()
-                .AppendLine("}")
-                .AppendLine();
-        }
-
-        if (entityClass.Properties.Any(p => p.ComparerType == ComparerTypes.Sequence))
-        {
-            codeBuilder
-                .AppendLine("static int SequenceHashCode<T>(global::System.Collections.Generic.IEnumerable<T>? items)")
-                .AppendLine("{")
-                .IncrementIndent()
-                .AppendLine("if (items is null)")
-                .AppendLine("    return 0;")
-                .AppendLine()
-                .Append("int hashCode = ")
-                .Append(entityClass.SeedHash)
-                .AppendLine(";")
-                .AppendLine()
-                .AppendLine("foreach (var item in items)")
-                .AppendLine("    hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<T>.Default.GetHashCode(item!);")
-                .AppendLine()
-                .AppendLine("return hashCode;")
-                .DecrementIndent()
-                .AppendLine("}")
-                .AppendLine();
-        }
+            .AppendLine("}");
     }
 }

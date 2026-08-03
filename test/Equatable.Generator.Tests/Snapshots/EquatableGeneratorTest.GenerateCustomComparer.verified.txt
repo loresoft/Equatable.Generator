@@ -12,7 +12,6 @@ namespace Equatable.Entities
                 && Id == other.Id
                 && global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.Equals(Name, other.Name)
                 && global::Equatable.Entities.LengthEqualityComparer.Default.Equals(Key, other.Key);
-
         }
 
         /// <inheritdoc />
@@ -34,14 +33,13 @@ namespace Equatable.Entities
         }
 
         /// <inheritdoc />
-        public override int GetHashCode(){
-            int hashCode = -749929470;
-            hashCode = (hashCode * -1521134295) + Id.GetHashCode();
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.GetHashCode(Name!);
-            hashCode = (hashCode * -1521134295) + global::Equatable.Entities.LengthEqualityComparer.Default.GetHashCode(Key!);
+        public override int GetHashCode()
+        {
+            int hashCode = global::Equatable.Comparer.HashSeed;
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + Id.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.GetHashCode(Name!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::Equatable.Entities.LengthEqualityComparer.Default.GetHashCode(Key!);
             return hashCode;
-
         }
-
     }
 }

@@ -15,7 +15,6 @@ namespace Equatable.Entities
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(LastName, other.LastName)
                 && LockoutEnd == other.LockoutEnd
                 && LastLogin == other.LastLogin;
-
         }
 
         /// <inheritdoc />
@@ -37,17 +36,16 @@ namespace Equatable.Entities
         }
 
         /// <inheritdoc />
-        public override int GetHashCode(){
-            int hashCode = -1356857704;
-            hashCode = (hashCode * -1521134295) + global::System.StringComparer.OrdinalIgnoreCase.GetHashCode(EmailAddress!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(DisplayName!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(FirstName!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(LastName!);
-            hashCode = (hashCode * -1521134295) + LockoutEnd.GetHashCode();
-            hashCode = (hashCode * -1521134295) + LastLogin.GetHashCode();
+        public override int GetHashCode()
+        {
+            int hashCode = global::Equatable.Comparer.HashSeed;
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.StringComparer.OrdinalIgnoreCase.GetHashCode(EmailAddress!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(DisplayName!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(FirstName!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(LastName!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + LockoutEnd.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + LastLogin.GetHashCode();
             return hashCode;
-
         }
-
     }
 }

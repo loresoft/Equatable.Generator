@@ -13,7 +13,6 @@ namespace Equatable.Entities
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Description, other.Description)
                 && DisplayOrder == other.DisplayOrder
                 && IsActive == other.IsActive;
-
         }
 
         /// <inheritdoc />
@@ -35,16 +34,15 @@ namespace Equatable.Entities
         }
 
         /// <inheritdoc />
-        public override int GetHashCode(){
-            int hashCode = -637655923;
-            hashCode = (hashCode * -1521134295) + Id.GetHashCode();
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.GetHashCode(Name!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Description!);
-            hashCode = (hashCode * -1521134295) + DisplayOrder.GetHashCode();
-            hashCode = (hashCode * -1521134295) + IsActive.GetHashCode();
+        public override int GetHashCode()
+        {
+            int hashCode = global::Equatable.Comparer.HashSeed;
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + Id.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<global::System.String>.Default.GetHashCode(Name!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Description!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + DisplayOrder.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + IsActive.GetHashCode();
             return hashCode;
-
         }
-
     }
 }

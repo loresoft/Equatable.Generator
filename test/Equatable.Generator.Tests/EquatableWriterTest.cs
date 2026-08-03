@@ -1,5 +1,6 @@
-using Equatable.SourceGenerator;
-using Equatable.SourceGenerator.Models;
+using Equatable.Generator;
+using Equatable.Generator.Infrastructure;
+using Equatable.Generator.Models;
 
 namespace Equatable.Generator.Tests;
 
@@ -25,8 +26,7 @@ public class EquatableWriterTest
             IsValueType: false,
             IsSealed: false,
             IncludeBaseEqualsMethod: false,
-            IncludeBaseHashMethod: false,
-            SeedHash: -1758092530
+            IncludeBaseHashMethod: false
         );
 
         var output = EquatableWriter.Generate(entityClass);
@@ -58,8 +58,7 @@ public class EquatableWriterTest
             IsValueType: false,
             IsSealed: false,
             IncludeBaseEqualsMethod: false,
-            IncludeBaseHashMethod: false,
-            SeedHash: -1758092530
+            IncludeBaseHashMethod: false
         );
 
         var output = EquatableWriter.Generate(entityClass);
@@ -93,8 +92,7 @@ public class EquatableWriterTest
             IsValueType: false,
             IsSealed: false,
             IncludeBaseEqualsMethod: false,
-            IncludeBaseHashMethod: false,
-            SeedHash: -1758092530
+            IncludeBaseHashMethod: false
         );
 
         var output = EquatableWriter.Generate(entityClass);

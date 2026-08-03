@@ -16,7 +16,6 @@ namespace Equatable.Entities
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(Content, other.Content)
                 && global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.Equals(UserName, other.UserName)
                 && global::System.Object.ReferenceEquals(Lock, other.Lock);
-
         }
 
         /// <inheritdoc />
@@ -38,18 +37,17 @@ namespace Equatable.Entities
         }
 
         /// <inheritdoc />
-        public override int GetHashCode(){
-            int hashCode = 374357566;
-            hashCode = (hashCode * -1521134295) + Id.GetHashCode();
-            hashCode = (hashCode * -1521134295) + Date.GetHashCode();
-            hashCode = (hashCode * -1521134295) + UserId.GetHashCode();
-            hashCode = (hashCode * -1521134295) + TaskId.GetHashCode();
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Content!);
-            hashCode = (hashCode * -1521134295) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(UserName!);
-            hashCode = (hashCode * -1521134295) + global::System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Lock!);
+        public override int GetHashCode()
+        {
+            int hashCode = global::Equatable.Comparer.HashSeed;
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + Id.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + Date.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + UserId.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + TaskId.GetHashCode();
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(Content!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Collections.Generic.EqualityComparer<global::System.String?>.Default.GetHashCode(UserName!);
+            hashCode = (hashCode * global::Equatable.Comparer.HashMultiplier) + global::System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Lock!);
             return hashCode;
-
         }
-
     }
 }

@@ -23,11 +23,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Equatable.Comparers\Equatable.Comparers.csproj" />
-    <ProjectReference Include="..\..\src\Equatable.Generator\Equatable.Generator.csproj" />
-    <ProjectReference Include="..\..\src\Equatable.SourceGenerator\Equatable.SourceGenerator.csproj">
+    <ProjectReference Include="..\..\src\Equatable.Generator\Equatable.Generator.csproj">
       <OutputItemType>Analyzer</OutputItemType>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\..\src\Equatable.Shared\Equatable.Shared.csproj" />
     <ProjectReference Include="..\Equatable.Entities\Equatable.Entities.csproj" />
   </ItemGroup>
 

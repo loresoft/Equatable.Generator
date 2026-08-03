@@ -1,4 +1,6 @@
-namespace Equatable.SourceGenerator.Models;
+using Equatable.Generator.Infrastructure;
+
+namespace Equatable.Generator.Models;
 
 public record EquatableClass(
     string FullyQualified,
@@ -11,6 +13,5 @@ public record EquatableClass(
     bool IsValueType,
     bool IsSealed,
     bool IncludeBaseEqualsMethod,
-    bool IncludeBaseHashMethod,
-    int SeedHash
+    bool IncludeBaseHashMethod
 );

@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 
 using Equatable.Attributes;
-using Equatable.SourceGenerator;
+using Equatable.Generator;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;

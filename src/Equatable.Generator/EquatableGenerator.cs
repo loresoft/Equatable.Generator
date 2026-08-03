@@ -1,10 +1,14 @@
-using Equatable.SourceGenerator.Models;
+using System.Text;
+
+using Equatable.Generator.Infrastructure;
+using Equatable.Generator.Models;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
-namespace Equatable.SourceGenerator;
+namespace Equatable.Generator;
 
 [Generator]
 public class EquatableGenerator : IIncrementalGenerator
@@ -14,6 +18,21 @@ public class EquatableGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        // add embedded attributes and extensions as additional files to compilation
+        context.RegisterPostInitializationOutput(static ctx =>
+        {
+            ctx.AddEmbeddedAttributeDefinition();
+
+            ctx.AddSource(
+                hintName: "Equatable.Attributes.g.cs",
+                sourceText: SourceText.From(LoadEmbedded("Attributes.cs"), Encoding.UTF8)
+            );
+            ctx.AddSource(
+                hintName: "Equatable.Comparer.g.cs",
+                sourceText: SourceText.From(LoadEmbedded("Comparer.cs"), Encoding.UTF8)
+            );
+        });
+
         var provider = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 fullyQualifiedMetadataName: "Equatable.Attributes.EquatableAttribute",
@@ -73,19 +92,6 @@ public class EquatableGenerator : IIncrementalGenerator
             .Select(CreateProperty)
             .ToArray() ?? [];
 
-        // the seed value of the hash code method
-        var seedHash = 0;
-
-        if (baseHashCode != null)
-            seedHash = (seedHash * HashFactor) + GetFNVHashCode(baseHashCode.ContainingSymbol.Name);
-        else if (baseEquatable != null)
-            seedHash = (seedHash * HashFactor) + GetFNVHashCode(baseEquatable.Name);
-        else if (baseEquals != null)
-            seedHash = (seedHash * HashFactor) + GetFNVHashCode(baseEquals.ContainingSymbol.Name);
-
-        foreach (var property in propertyArray)
-            seedHash = (seedHash * HashFactor) + GetFNVHashCode(property.PropertyName);
-
         return new EquatableClass(
             FullyQualified: fullyQualified,
             EntityNamespace: classNamespace,
@@ -97,8 +103,7 @@ public class EquatableGenerator : IIncrementalGenerator
             IsValueType: targetSymbol.IsValueType,
             IsSealed: targetSymbol.IsSealed,
             IncludeBaseEqualsMethod: baseEquals != null || baseEquatable != null,
-            IncludeBaseHashMethod: baseHashCode != null || baseEquatable != null,
-            SeedHash: seedHash
+            IncludeBaseHashMethod: baseHashCode != null || baseEquatable != null
         );
     }
 
@@ -488,17 +493,17 @@ public class EquatableGenerator : IIncrementalGenerator
     }
 
 
-    private const int HashFactor = -1521134295;
-
-    private const int FnvOffsetBias = unchecked((int)2166136261);
-    private const int FnvPrime = 16777619;
-
-    private static int GetFNVHashCode(string text)
+    private static string LoadEmbedded(string name)
     {
-        var hashCode = FnvOffsetBias;
-        for (int i = 0; i < text.Length; i++)
-            hashCode = unchecked((hashCode ^ text[i]) * FnvPrime);
+        var assembly = typeof(EquatableGenerator).Assembly;
+        var resourceName = "Equatable.Generator.Embedded." + name;
 
-        return hashCode;
+        using var stream = assembly.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException($"Embedded resource not found: {resourceName}");
+
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
     }
+
+
 }

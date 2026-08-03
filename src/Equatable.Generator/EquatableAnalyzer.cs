@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Equatable.SourceGenerator;
+namespace Equatable.Generator;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public class EquatableAnalyzer : DiagnosticAnalyzer

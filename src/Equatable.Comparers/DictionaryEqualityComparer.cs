@@ -74,7 +74,7 @@ public class DictionaryEqualityComparer<TKey, TValue> : IEqualityComparer<IDicti
         var hash = new HashCode();
 
         // sort by key to ensure dictionary with different order are the same
-        foreach (var pair in obj.OrderBy(d => d.Key))
+        foreach (var pair in obj.OrderBy(static d => d.Key))
         {
             hash.Add(pair.Key, KeyComparer);
             hash.Add(pair.Value, ValueComparer);

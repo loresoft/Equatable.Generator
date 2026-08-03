@@ -12,5 +12,5 @@
   </Folder>
   <Project Path="src/Equatable.Comparers/Equatable.Comparers.csproj" />
   <Project Path="src/Equatable.Generator/Equatable.Generator.csproj" />
-  <Project Path="src/Equatable.SourceGenerator/Equatable.SourceGenerator.csproj" />
+  <Project Path="src/Equatable.Shared/Equatable.Shared.csproj" Id="9388e83a-32ce-4f33-8b6e-6d3aa72e0372" />
 </Solution>
