@@ -13,8 +13,6 @@ namespace Equatable.Generator;
 [Generator]
 public class EquatableGenerator : IIncrementalGenerator
 {
-    private const string DefaultStringComparerName = "Ordinal";
-
     private static readonly SymbolDisplayFormat FullyQualifiedNullableFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
     private static readonly SymbolDisplayFormat NameAndNamespaces = new(SymbolDisplayGlobalNamespaceStyle.Omitted, SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces, SymbolDisplayGenericsOptions.None);
 
@@ -147,17 +145,15 @@ public class EquatableGenerator : IIncrementalGenerator
         var underlyingType = UnwrapNullable(propertySymbol.Type);
         var isNullable = !SymbolEqualityComparer.Default.Equals(underlyingType, propertySymbol.Type);
 
-        // string properties use StringComparer.Ordinal by default, which is equivalent to string.Equals
-        // only use the == operator when the type actually supports it, otherwise fall back to EqualityComparer<T>.Default
+        // string properties compare with StringComparison.Ordinal by default, which is equivalent to string.Equals
         var isString = IsString(underlyingType);
 
+        // only use the == operator when the type actually supports it, otherwise fall back to EqualityComparer<T>.Default
         var defaultComparer = isString
             ? ComparerTypes.String
             : isValueType && HasEqualityOperator(underlyingType)
                 ? ComparerTypes.ValueType
                 : ComparerTypes.Default;
-
-        var defaultComparerName = isString ? DefaultStringComparerName : null;
 
         // look for custom equality
         var attributes = propertySymbol.GetAttributes();
@@ -167,7 +163,6 @@ public class EquatableGenerator : IIncrementalGenerator
                 propertyName,
                 propertyType,
                 defaultComparer,
-                defaultComparerName,
                 IsNullable: isNullable);
         }
 
@@ -197,7 +192,6 @@ public class EquatableGenerator : IIncrementalGenerator
             propertyName,
             propertyType,
             defaultComparer,
-            defaultComparerName,
             IsNullable: isNullable);
     }
 
@@ -245,12 +239,12 @@ public class EquatableGenerator : IIncrementalGenerator
     private static (ComparerTypes? comparerType, string? comparerName, string? comparerInstance) GetStringComparer(AttributeData? attribute)
     {
         if (attribute == null || attribute.ConstructorArguments.Length != 1)
-            return (ComparerTypes.String, DefaultStringComparerName, null);
+            return (ComparerTypes.String, null, null);
 
         var argument = attribute.ConstructorArguments[0];
 
         if (argument.Value is not int value)
-            return (ComparerTypes.String, DefaultStringComparerName, null);
+            return (ComparerTypes.String, null, null);
 
         var comparerName = value switch
         {
@@ -260,7 +254,7 @@ public class EquatableGenerator : IIncrementalGenerator
             3 => "InvariantCultureIgnoreCase",
             4 => "Ordinal",
             5 => "OrdinalIgnoreCase",
-            _ => DefaultStringComparerName
+            _ => null
         };
 
         return (ComparerTypes.String, comparerName, null);

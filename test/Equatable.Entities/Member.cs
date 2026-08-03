@@ -9,6 +9,7 @@ public partial class Member
 {
     public Guid Id { get; set; }
 
+    [StringEquality(StringComparison.OrdinalIgnoreCase)]
     public string EmailAddress { get; set; } = null!;
 
     public string DisplayName { get; set; } = null!;

@@ -7,8 +7,6 @@ namespace Equatable.Generator;
 
 public static class EquatableWriter
 {
-    private const string DefaultStringComparerName = "Ordinal";
-
     public static string Generate(EquatableClass entityClass)
     {
         if (entityClass is null)
@@ -185,13 +183,14 @@ public static class EquatableWriter
                     break;
                 case ComparerTypes.String:
                     codeBuilder
-                        .Append(" global::System.StringComparer.")
-                        .Append(entityProperty.ComparerName ?? DefaultStringComparerName)
-                        .Append(".Equals(")
+                        .Append(" global::Equatable.Comparer.StringEquals(")
                         .Append(entityProperty.PropertyName)
                         .Append(", other.")
-                        .Append(entityProperty.PropertyName)
-                        .Append(")");
+                        .Append(entityProperty.PropertyName);
+
+                    AppendStringComparison(codeBuilder, entityProperty.ComparerName);
+
+                    codeBuilder.Append(")");
 
                     break;
                 case ComparerTypes.Custom:
@@ -388,15 +387,14 @@ public static class EquatableWriter
                         .AppendLine(");");
                     break;
                 case ComparerTypes.String:
-                    // StringComparer.GetHashCode throws on null, so hash null values explicitly
                     codeBuilder
-                        .Append("hashCode = (hashCode * global::Equatable.Comparer.Multiplier) + (")
-                        .Append(entityProperty.PropertyName)
-                        .Append(" is null ? global::Equatable.Comparer.NullValue : global::System.StringComparer.")
-                        .Append(entityProperty.ComparerName ?? DefaultStringComparerName)
-                        .Append(".GetHashCode(")
-                        .Append(entityProperty.PropertyName)
-                        .AppendLine("));");
+                        .Append("hashCode = (hashCode * global::Equatable.Comparer.Multiplier) + ")
+                        .Append("global::Equatable.Comparer.StringHashCode(")
+                        .Append(entityProperty.PropertyName);
+
+                    AppendStringComparison(codeBuilder, entityProperty.ComparerName);
+
+                    codeBuilder.AppendLine(");");
                     break;
                 case ComparerTypes.Custom:
                     codeBuilder
@@ -445,5 +443,16 @@ public static class EquatableWriter
         codeBuilder
             .DecrementIndent()
             .AppendLine("}");
+    }
+
+    // the comparer helpers default to ordinal when no comparison is specified
+    private static void AppendStringComparison(IndentedStringBuilder codeBuilder, string? comparerName)
+    {
+        if (string.IsNullOrEmpty(comparerName))
+            return;
+
+        codeBuilder
+            .Append(", global::System.StringComparison.")
+            .Append(comparerName);
     }
 }
