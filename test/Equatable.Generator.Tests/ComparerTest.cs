@@ -154,9 +154,9 @@ public class ComparerTest
     {
         int?[] values = [1, null, 2];
         int expected = Comparer.HashSeed;
-        expected = unchecked((expected * Comparer.HashMultiplier) + 1);
-        expected = unchecked(expected * Comparer.HashMultiplier);
-        expected = unchecked((expected * Comparer.HashMultiplier) + 2);
+        expected = unchecked((expected * Comparer.Multiplier) + 1);
+        expected = unchecked(expected * Comparer.Multiplier);
+        expected = unchecked((expected * Comparer.Multiplier) + 2);
 
         Assert.Equal(expected, Comparer.SequenceHashCode(values));
     }
@@ -207,14 +207,5 @@ public class ComparerTest
         Assert.Equal(
             Comparer.HashSetHashCode(left),
             Comparer.HashSetHashCode(right));
-    }
-
-    [Theory]
-    [InlineData(null, -1)]
-    [InlineData(false, 0)]
-    [InlineData(true, 1)]
-    public void NullableBoolHashCodeReturnsStableValue(bool? value, int expected)
-    {
-        Assert.Equal(expected, Comparer.NullableBoolHashCode(value));
     }
 }

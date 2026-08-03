@@ -5,6 +5,43 @@ namespace Equatable.Generator.Tests.Entities;
 public class AuditTest
 {
     [Fact]
+    public void WhenDefaultStringsMatchThenAuditsAreEqual()
+    {
+        var lockObject = new object();
+        var left = new Audit { Content = "Content", UserName = "User", Lock = lockObject };
+        var right = new Audit { Content = "Content", UserName = "User", Lock = lockObject };
+
+        var isEqual = left.Equals(right);
+
+        Assert.True(isEqual);
+    }
+
+    [Fact]
+    public void WhenDefaultStringsDifferByCaseThenAuditsAreNotEqual()
+    {
+        var lockObject = new object();
+        var left = new Audit { Content = "Content", UserName = "User", Lock = lockObject };
+        var right = new Audit { Content = "content", UserName = "user", Lock = lockObject };
+
+        var isEqual = left.Equals(right);
+
+        Assert.False(isEqual);
+    }
+
+    [Fact]
+    public void WhenDefaultStringsAreNullThenAuditHashCodesAreEqual()
+    {
+        var lockObject = new object();
+        var left = new Audit { Lock = lockObject };
+        var right = new Audit { Lock = lockObject };
+
+        var leftHashCode = left.GetHashCode();
+        var rightHashCode = right.GetHashCode();
+
+        Assert.Equal(leftHashCode, rightHashCode);
+    }
+
+    [Fact]
     public void EqualAuditTrue()
     {
         var lockObject = new object();

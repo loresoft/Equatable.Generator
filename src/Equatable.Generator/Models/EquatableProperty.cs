@@ -5,4 +5,5 @@ public record EquatableProperty(
         string PropertyType,
         ComparerTypes ComparerType = ComparerTypes.Default,
         string? ComparerName = null,
-        string? ComparerInstance = null);
+        string? ComparerInstance = null,
+        bool IsNullable = false);

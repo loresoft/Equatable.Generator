@@ -40,6 +40,10 @@ public class SequenceEqualityComparer<TValue> : IEqualityComparer<IEnumerable<TV
         if (x is null || y is null)
             return false;
 
+        // only compare counts when both sequences expose one
+        if (TryGetCount(x, out var xCount) && TryGetCount(y, out var yCount) && xCount != yCount)
+            return false;
+
         return x.SequenceEqual(y, Comparer);
     }
 
@@ -55,5 +59,22 @@ public class SequenceEqualityComparer<TValue> : IEqualityComparer<IEnumerable<TV
             hashCode.Add(item, Comparer);
 
         return hashCode.ToHashCode();
+    }
+
+
+    private static bool TryGetCount(IEnumerable<TValue> source, out int count)
+    {
+        switch (source)
+        {
+            case ICollection<TValue> collection:
+                count = collection.Count;
+                return true;
+            case IReadOnlyCollection<TValue> readOnlyCollection:
+                count = readOnlyCollection.Count;
+                return true;
+            default:
+                count = 0;
+                return false;
+        }
     }
 }

@@ -45,10 +45,10 @@ Place `[Equatable]` attribute on a `class`, `record` or `struct`.  The source ge
 
 - `[Equatable]` Marks the class to generate overrides for `Equals` and `GetHashCode`
 
- The default comparer used in the implementation of `Equals` and `GetHashCode` is `EqualityComparer<T>.Default`.  Customize the comparer used with the following attributes.
+ By default, string properties use `StringComparer.Ordinal`, which is equivalent to `string.Equals`. Other reference types use `EqualityComparer<T>.Default`. Customize the comparer used with the following attributes.
 
 - `[IgnoreEquality]` Ignore property in `Equals` and `GetHashCode` implementations
-- `[StringEquality]` Use specified `StringComparer` when comparing strings
+- `[StringEquality]` Use specified `StringComparer` when comparing strings, overriding the default `StringComparer.Ordinal`
 - `[SequenceEquality]` Use `Enumerable.SequenceEqual` to determine whether enumerables are equal
 - `[DictionaryEquality]` Use to determine if dictionaries are equal
 - `[HashSetEquality]` Use `ISet<T>.SetEquals` to determine whether enumerables are equal

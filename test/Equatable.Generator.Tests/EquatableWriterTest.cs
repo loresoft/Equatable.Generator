@@ -17,9 +17,9 @@ public class EquatableWriterTest
             ContainingTypes: Array.Empty<ContainingClass>(),
             Properties: new EquatableArray<EquatableProperty>([
                 new EquatableProperty("Id", "int"),
-                new EquatableProperty("FirstName", "string?"),
-                new EquatableProperty("LastName", "string?"),
-                new EquatableProperty("EmailAddress", "string"),
+                new EquatableProperty("FirstName", "string?", ComparerTypes.Default),
+                new EquatableProperty("LastName", "string?", ComparerTypes.Default),
+                new EquatableProperty("EmailAddress", "string", ComparerTypes.Default),
                 new EquatableProperty("Created", "System.DateTimeOffset")
             ]),
             IsRecord: false,
@@ -48,8 +48,8 @@ public class EquatableWriterTest
             ContainingTypes: Array.Empty<ContainingClass>(),
             Properties: new EquatableArray<EquatableProperty>([
                 new EquatableProperty("Id", "int"),
-                new EquatableProperty("FirstName", "string?"),
-                new EquatableProperty("LastName", "string?"),
+                new EquatableProperty("FirstName", "string?", ComparerTypes.Default),
+                new EquatableProperty("LastName", "string?", ComparerTypes.Default),
                 new EquatableProperty("EmailAddress", "string", ComparerTypes.String, "OrdinalIgnoreCase"),
                 new EquatableProperty("Created", "System.DateTimeOffset"),
                 new EquatableProperty("Roles", "ICollection<Role>", ComparerTypes.Sequence),
@@ -80,9 +80,9 @@ public class EquatableWriterTest
             ContainingTypes: Array.Empty<ContainingClass>(),
             Properties: new EquatableArray<EquatableProperty>([
                 new EquatableProperty("EmailAddress", "string", ComparerTypes.String, "OrdinalIgnoreCase"),
-                new EquatableProperty("DisplayName", "string?"),
-                new EquatableProperty("FirstName", "string?"),
-                new EquatableProperty("LastName", "string?"),
+                new EquatableProperty("DisplayName", "string?", ComparerTypes.Default),
+                new EquatableProperty("FirstName", "string?", ComparerTypes.Default),
+                new EquatableProperty("LastName", "string?", ComparerTypes.Default),
                 new EquatableProperty("LockoutEnd", "System.DateTimeOffset?"),
                 new EquatableProperty("LastLogin", "System.DateTimeOffset?"),
                 new EquatableProperty("Roles", "System.Collections.Generic.HashSet<string>?", ComparerTypes.HashSet),

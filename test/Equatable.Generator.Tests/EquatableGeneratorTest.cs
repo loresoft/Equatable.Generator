@@ -326,6 +326,33 @@ public class LengthEqualityComparer : IEqualityComparer<string?>
     }
 
     [Fact]
+    public Task GenerateDefaultStringComparer()
+    {
+        var source = @"
+using Equatable.Attributes;
+
+namespace Equatable.Entities;
+
+[Equatable]
+public partial class DefaultStringComparer
+{
+    public string Name { get; set; } = null!;
+
+    public string? Description { get; set; }
+}
+";
+
+        var (diagnostics, output) = GetGeneratedOutput<EquatableGenerator>(source);
+
+        Assert.Empty(diagnostics);
+
+        return Verifier
+            .Verify(output)
+            .UseDirectory("Snapshots")
+            .ScrubLinesContaining("GeneratedCodeAttribute");
+    }
+
+    [Fact]
     public Task GenerateReferenceComparer()
     {
         var source = @"

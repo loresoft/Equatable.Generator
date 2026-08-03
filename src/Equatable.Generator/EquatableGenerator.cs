@@ -13,6 +13,8 @@ namespace Equatable.Generator;
 [Generator]
 public class EquatableGenerator : IIncrementalGenerator
 {
+    private const string DefaultStringComparerName = "Ordinal";
+
     private static readonly SymbolDisplayFormat FullyQualifiedNullableFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
     private static readonly SymbolDisplayFormat NameAndNamespaces = new(SymbolDisplayGlobalNamespaceStyle.Omitted, SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces, SymbolDisplayGenericsOptions.None);
 
@@ -40,7 +42,7 @@ public class EquatableGenerator : IIncrementalGenerator
                 transform: SemanticTransform
             )
             .Where(static context => context is not null)
-            .WithTrackingName("EquatableAttribute");
+            .WithTrackingName("EquatableGenerator");
 
         // output code
         var entityClasses = provider
@@ -141,7 +143,21 @@ public class EquatableGenerator : IIncrementalGenerator
         var propertyType = propertySymbol.Type.ToDisplayString(FullyQualifiedNullableFormat);
         var propertyName = propertySymbol.Name;
         var isValueType = propertySymbol.Type.IsValueType;
-        var defaultComparer = isValueType ? ComparerTypes.ValueType : ComparerTypes.Default;
+
+        var underlyingType = UnwrapNullable(propertySymbol.Type);
+        var isNullable = !SymbolEqualityComparer.Default.Equals(underlyingType, propertySymbol.Type);
+
+        // string properties use StringComparer.Ordinal by default, which is equivalent to string.Equals
+        // only use the == operator when the type actually supports it, otherwise fall back to EqualityComparer<T>.Default
+        var isString = IsString(underlyingType);
+
+        var defaultComparer = isString
+            ? ComparerTypes.String
+            : isValueType && HasEqualityOperator(underlyingType)
+                ? ComparerTypes.ValueType
+                : ComparerTypes.Default;
+
+        var defaultComparerName = isString ? DefaultStringComparerName : null;
 
         // look for custom equality
         var attributes = propertySymbol.GetAttributes();
@@ -150,7 +166,9 @@ public class EquatableGenerator : IIncrementalGenerator
             return new EquatableProperty(
                 propertyName,
                 propertyType,
-                defaultComparer);
+                defaultComparer,
+                defaultComparerName,
+                IsNullable: isNullable);
         }
 
         // search for known attribute
@@ -163,25 +181,24 @@ public class EquatableGenerator : IIncrementalGenerator
 
             var isValid = ValidateComparer(propertySymbol, comparerType);
             if (!isValid)
-            {
-                return new EquatableProperty(
-                    propertyName,
-                    propertyType,
-                    defaultComparer);
-            }
+                continue;
 
             return new EquatableProperty(
                 propertyName,
                 propertyType,
                 comparerType.Value,
                 comparerName,
-                comparerInstance);
+                comparerInstance,
+                isNullable);
         }
 
+        // fall back to default comparer if no valid attribute was found
         return new EquatableProperty(
             propertyName,
             propertyType,
-            defaultComparer);
+            defaultComparer,
+            defaultComparerName,
+            IsNullable: isNullable);
     }
 
     private static bool ValidateComparer(IPropertySymbol propertySymbol, ComparerTypes? comparerType)
@@ -228,12 +245,12 @@ public class EquatableGenerator : IIncrementalGenerator
     private static (ComparerTypes? comparerType, string? comparerName, string? comparerInstance) GetStringComparer(AttributeData? attribute)
     {
         if (attribute == null || attribute.ConstructorArguments.Length != 1)
-            return (ComparerTypes.Default, null, null);
+            return (ComparerTypes.String, DefaultStringComparerName, null);
 
         var argument = attribute.ConstructorArguments[0];
 
         if (argument.Value is not int value)
-            return (ComparerTypes.String, "CurrentCulture", null);
+            return (ComparerTypes.String, DefaultStringComparerName, null);
 
         var comparerName = value switch
         {
@@ -243,7 +260,7 @@ public class EquatableGenerator : IIncrementalGenerator
             3 => "InvariantCultureIgnoreCase",
             4 => "Ordinal",
             5 => "OrdinalIgnoreCase",
-            _ => "CurrentCulture"
+            _ => DefaultStringComparerName
         };
 
         return (ComparerTypes.String, comparerName, null);
@@ -365,6 +382,50 @@ public class EquatableGenerator : IIncrementalGenerator
             Name: nameof(String),
             ContainingNamespace.Name: "System"
         };
+    }
+
+    private static ITypeSymbol UnwrapNullable(ITypeSymbol targetSymbol)
+    {
+        // the constructed Nullable<T> reports the special type on its original definition
+        if (targetSymbol is INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: 1 } namedSymbol
+            && namedSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+        {
+            return namedSymbol.TypeArguments[0];
+        }
+
+        return targetSymbol;
+    }
+
+    private static bool HasEqualityOperator(ITypeSymbol targetSymbol)
+    {
+        // enums and built-in types support == via a built-in operator, not a declared member
+        if (targetSymbol.TypeKind == TypeKind.Enum)
+            return true;
+
+        switch (targetSymbol.SpecialType)
+        {
+            case SpecialType.System_Boolean:
+            case SpecialType.System_Byte:
+            case SpecialType.System_Char:
+            case SpecialType.System_Decimal:
+            case SpecialType.System_Double:
+            case SpecialType.System_Int16:
+            case SpecialType.System_Int32:
+            case SpecialType.System_Int64:
+            case SpecialType.System_IntPtr:
+            case SpecialType.System_SByte:
+            case SpecialType.System_Single:
+            case SpecialType.System_UInt16:
+            case SpecialType.System_UInt32:
+            case SpecialType.System_UInt64:
+            case SpecialType.System_UIntPtr:
+                return true;
+        }
+
+        return targetSymbol
+            .GetMembers(WellKnownMemberNames.EqualityOperatorName)
+            .OfType<IMethodSymbol>()
+            .Any(method => method.MethodKind == MethodKind.UserDefinedOperator);
     }
 
 
